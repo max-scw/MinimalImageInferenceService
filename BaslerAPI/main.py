@@ -245,20 +245,29 @@ def connect_to_camera(serial_number: int = None):
         "get_connection_flag": get_connection_flag
     }
 
+
 @app.get(ENTRYPOINT_TEST_IMAGE)
-def return_test_image():
+def return_test_image(
+        exposure_time_microseconds: int = None,
+        serial_number: int = None,
+        ip_address: str = None,
+        emulate_camera: bool = False,
+        timeout: int = None,
+        transmission_type: str = None,
+        destination_ip_address: str = None,
+        destination_port: int = None
+):
     # load file
     image_path = get_env_variable("TEST_IMAGE", None)
     if image_path and Path(image_path).is_file():
+        image_path = Path(image_path)
         return FileResponse(
             image_path.as_posix(),
-            media_type='image/webp',
+            media_type=f"image/{image_path.suffix.strip('.')}",
             background=BackgroundTask(limit_temp_files)
         )
     else:
         return None
-
-
 
 
 if __name__ == "__main__":

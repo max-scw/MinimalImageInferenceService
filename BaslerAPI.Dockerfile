@@ -10,9 +10,6 @@ LABEL version=2024.03.06
 # Environment variables (default values)
 ENV LOGFILE=BaslerAPI
 
-# Set the working directory
-WORKDIR /app
-
 ARG DEBIAN_FRONTEND=noninteractived
 
 # add white-listed websites
@@ -20,12 +17,25 @@ RUN printf "deb https://deb.debian.org/debian bullseye main \
             deb https://security.debian.org/debian-security bullseye-security main \
             deb https://deb.debian.org/debian bullseye-updates main" > /etc/apt/sources.list
 
+# new default user
+RUN useradd -ms /bin/bash app
+# Set the working directory
+WORKDIR /home/app
+
+
 # Install requirements
 COPY BaslerAPI/requirements.txt requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
-# Add code
+
+# Copy app into the container
+ADD utils ./utils/
 COPY BaslerAPI/* ./
 
+
+# set to non-root user
+USER root
+RUN chown -R app:app /home/app
+USER app
 
 EXPOSE 5050
 # FOR DEBUGGING
