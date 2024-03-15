@@ -6,12 +6,12 @@ additional_info=""
 project_link=""
 
 [camera]
-url=""
+url="balser-api:5050"
 exposure_time_microseconds=10000
 # camera address
 serial_number=""
 ip_address=""
-timeout_ms=""
+timeout=""
 transmission_type=""
 destination_ip_address=""
 destination_port=""

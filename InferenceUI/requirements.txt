@@ -1,4 +1,6 @@
 onnxruntime>=1.17.1
 opencv-python-headless>=4.0.0.21
+pydantic>=2.6.1
 pyyaml>=5.1
 requests>=2.31.0
+streamlit>=1.30.0

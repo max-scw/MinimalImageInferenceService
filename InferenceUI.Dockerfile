@@ -20,7 +20,6 @@ RUN printf "deb https://deb.debian.org/debian bullseye main \
 
 # new default user
 RUN useradd -ms /bin/bash app
-#USER appuser
 # Set the working directory
 WORKDIR /home/app
 RUN mkdir ./data
@@ -32,15 +31,15 @@ COPY InferenceUI/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
-ADD utils ./
-ADD utils_streamlit ./
+ADD utils ./utils/
+ADD utils_streamlit ./utils_streamlit/
 COPY InferenceUI/* ./
 
 
 # set to non-root user
 USER root
-RUN chown -R appuser:appuser /home/appuser
-USER appuser
+RUN chown -R app:app /home/app
+USER app
 
 # Define the health check using curl for both HTTP and HTTPS
 HEALTHCHECK --interval=30s --timeout=5s \
@@ -50,6 +49,6 @@ HEALTHCHECK --interval=30s --timeout=5s \
 EXPOSE 8501
 
 ## Start the app
-#ENTRYPOINT ["streamlit", "run", "main", "--server.port=8501", "--server.address=0.0.0.0"]
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 

@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Tuple, Union, Literal
 
 class ModelInfo(BaseModel):
     path: Union[str, Path]
-    class_map: Dict[int, str]
+    class_map: Optional[Dict[int, str]] = None
     color_map: Optional[Dict[int, str]] = None
     image_size: Optional[Tuple[int, int]] = None
     precision: Optional[Literal["fp32", "fp16", "int8"]] = "fp32"

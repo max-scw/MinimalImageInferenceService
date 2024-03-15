@@ -40,7 +40,7 @@ if __name__ == "__main__":
     prefix = get_env_variable("PREFIX", "TI")
 
     # --- load default config
-    with open(Path("./InferenceUI/default_config.toml"), "rb") as fid:
+    with open(Path("./default_config.toml"), "rb") as fid:
         config_default = tomllib.load(fid)
 
     config_default_env = dict()
@@ -49,7 +49,7 @@ if __name__ == "__main__":
             # variable name
             var_nm = "_".join([group, ky]).upper()
             nm = "_".join([prefix, var_nm]).upper()
-            config_default_env[nm] = vl if vl else None
+            config_default_env[var_nm] = vl if vl else None
 
     config = get_environment_variables(rf"{prefix}_", False) | config_default_env
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     )
 
     camera_info = CameraInfo(
-        url=config["CAMERA_ADDRESS"],
+        url=config["CAMERA_URL"],
         # exposure_time_microseconds: Optional[int] = 10000
         # camera addresses
         serial_number=config["CAMERA_SERIAL_NUMBER"],
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
         destination_port=config["CAMERA_DESTINATION_PORT"],
         # debugging
-        emulate_camera=config["CAMERA_EMULATE"]
+        emulate_camera=config["CAMERA_EMULATE_CAMERA"] if config["CAMERA_EMULATE_CAMERA"] else False
     )
 
     filename = Path(config["MODEL_FILENAME"])
@@ -88,7 +88,9 @@ if __name__ == "__main__":
     for ky in ["MODEL_CLASS_MAP", "MODEL_COLOR_MAP"]:
         mapping = config[ky]
 
-        if Path(mapping).suffix in (".yaml", ".yml"):
+        if mapping is None:
+            map_ = None
+        elif Path(mapping).suffix in (".yaml", ".yml"):
             # if is YAML file
             # identify path to file
             path_to_map = look_for_file(mapping, [folder_head, folder_data])
@@ -114,5 +116,5 @@ if __name__ == "__main__":
     main(
         model_info=model_info,
         camera_info=camera_info,
-        impress=impress
+        # impress=impress
     )
