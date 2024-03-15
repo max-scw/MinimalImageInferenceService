@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+   # ----- toy inference
+  basler-camera-service:
+    container_name: basler-api
+    build:
+      context: ./
+      dockerfile: BaslerAPI.Dockerfile
+    image: schwmax/basler-api
+#    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      # customize
+      - TEST_IMAGE=/home/app/testimage.bmp
+    volumes:
+      - ./BaslerAPI/230221_143518_0000001264_CAM1_NORMAL_OK.bmp:/home/app/testimage.bmp
+    ports:
+      - 3956:3956
+      - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
+      - 5005:5050  # external access port | can be closed
+
+  toy-inference:
+    build:
+      context: ./
+      dockerfile: InferenceUI.Dockerfile
+    image: schwmax/inference-ui
+    container_name: toy-inference
+#    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      # variables to customize container
+      - TI_MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
+      - TI_CAMERA_URL=basler-camera-service:5050/take-photo
+      - TI_CAMERA_EMULATE_CAMERA=True
+      # impress
+      - TI_PROJECT_NAME="MVE inference UI test"
+    volumes:
+      # mount model into container
+#      - ./UIdata/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/model.onnx
+      - ./UIdata/:/home/app/data/
+    ports:
+      - 5006:8501  # external access port
