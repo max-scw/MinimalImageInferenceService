@@ -1,0 +1,4 @@
+onnxruntime>=1.17.1
+opencv-python-headless>=4.0.0.21
+pyyaml>=5.1
+requests>=2.31.0
