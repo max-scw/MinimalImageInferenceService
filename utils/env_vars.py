@@ -1,5 +1,6 @@
 import os
 import re
+from ast import literal_eval
 
 from typing import List, Dict, Any, Union
 
@@ -24,15 +25,25 @@ def get_environment_variables(prefix: str, with_prefix: bool = True) -> Dict[str
     return config
 
 
+re_number = re.compile("^[0-9.,]+$")
+re_integer = re.compile(r"^\d+$")
+re_float = re.compile(r"^((\d+\.(\d+)?)|(\.\d+))$")
+re_float_de = re.compile(r"^((\d+,(\d+)?)|(,\d+))$")
+re_boolean = re.compile(r"^(true|false)$", re.IGNORECASE | re.ASCII)
+re_list_or_tuple_or_dict = re.compile(r"^\s*(\[.*\]|\(.*\)|\{.*\})\s*$", re.ASCII)
+
+
 def cast(var: str) -> Union[None, int, float, str, bool]:
     """casting strings to primitive datatypes"""
-    if re.match(r"[0-9.,]+$", var):
-        if re.match(r"\d+$", var):  # integer
+    if re_number.match(var):
+        if re_integer.match(var):  # integer
             var = int(var)
-        elif re.match(r"((\d+\.(\d+)?)|(\.\d+))$", var):  # float
+        elif re_float.match(var):  # float
             var = float(var)
-        elif re.match(r"((\d+,(\d+)?)|(,\d+))$", var):  # float
+        elif re_float_de.match(var):  # float
             var = float(var.replace(",", "."))
-    elif re.match(r"(True)|(False)$", var, re.IGNORECASE):
+    elif re_boolean.match(var):
         var = True if var[0].lower() == "t" else False
+    elif re_list_or_tuple_or_dict.match(var):
+        var = literal_eval(var)
     return var
