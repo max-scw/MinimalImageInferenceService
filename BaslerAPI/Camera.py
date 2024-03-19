@@ -132,7 +132,12 @@ class BaslerPylonCameraWrapper:
         )
         return True
 
-    def create_camera(self, serial_number: int = None, ip_address: str = None, emulate_camera: bool = False) -> bool:
+    def create_camera(
+            self,
+            serial_number: int = None,
+            ip_address: str = None,
+            emulate_camera: bool = False
+    ) -> bool:
         # verbose: print input
         info = {
             "serial_number": serial_number,
@@ -168,8 +173,13 @@ class BaslerPylonCameraWrapper:
         self._print(f"No camera created", "create_camera")
         return False
 
-    @staticmethod
-    def _create_camera(serial_number: int = None, ip_address: str = None) -> pylon.InstantCamera:
+    # @staticmethod
+    def _create_camera(
+            self,
+            serial_number: int = None,
+            ip_address: str = None
+    ) -> pylon.InstantCamera:
+        self._print(f"serial_number={serial_number}, ip_address={ip_address}", "_create_camera")
         # create camera object
         if serial_number:
             # find camera by serial number
@@ -177,10 +187,10 @@ class BaslerPylonCameraWrapper:
             cam = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(cam_info))
         elif ip_address:
             # find camera by IP address
-            cam = get_camera_by_ip_address(ip_address)
+            cam = get_camera_by_ip_address(ip_address.strip("'").strip('"'))
         else:
-            print('Emulating a camera.')
-            os.environ['PYLON_CAMEMU'] = '1'
+            self._print("Emulating a camera.", "_create_camera")
+            os.environ['PYLON_CAMEMU'] = "1"
             cam = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
 
         return cam

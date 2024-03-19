@@ -6,7 +6,7 @@ import io
 
 
 def save_image(
-        image: np.ndarray,
+        image: Image,
         export_path: Path,
         marker: str = None,
         file_extension: str = ".webp"
@@ -22,7 +22,7 @@ def save_image(
     # write image to path
     path_to_file = export_path / filename
     if not path_to_file.exists():
-        Image.fromarray(image).save(path_to_file)
+        image.save(path_to_file)
     # return file path
     return path_to_file
 

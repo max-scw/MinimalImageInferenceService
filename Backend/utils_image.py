@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import cv2
 import numpy as np
@@ -87,6 +88,7 @@ def prepare_image(
         shape: Tuple[int, int],
         precision: Literal["fp64", "fp32", "fp16", "int8"] = None
 ) -> np.ndarray:
+    logging.debug(f"prepare_image({image.shape}, {shape}, {precision})")
     # resize
     img_sml = letterbox(image, new_shape=shape, stride=32)[0]
     # move channels
@@ -96,7 +98,10 @@ def prepare_image(
     img_nrm = img_mdl / 255.0
     # add batch axis
     img_btc = img_nrm[np.newaxis, ...]
-    return img_btc.astype(precision_to_type(precision)) if precision is not None else img_btc
+    # convert image
+    img_out = img_btc.astype(precision_to_type(precision)) if precision is not None else img_btc
+    logging.debug(f"prepare_image(): img_out.shape={img_out.shape}, img_out.dtype={img_out.dtype}")
+    return img_out
 
 
 def precision_to_type(precision: Literal["fp64", "fp32", "fp16", "int8"]) -> type:

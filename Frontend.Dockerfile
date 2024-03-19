@@ -6,10 +6,10 @@ ENV PYTHONUNBUFFERED 1
 
 # Metadata
 LABEL author=SCHWMAX
-LABEL version=2024.03.07
+LABEL version=2024.03.19
 
 # Environment variables (default values)
-ENV LOGFILE=ToyInference
+ENV LOGFILE=ToyInferenceFrontend
 
 ARG DEBIAN_FRONTEND=noninteractived
 
@@ -27,13 +27,13 @@ RUN mkdir ./data
 
 
 # Install requirements
-COPY InferenceUI/requirements.txt ./requirements.txt
+COPY Frontend/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
 ADD utils ./utils/
 ADD utils_streamlit ./utils_streamlit/
-COPY InferenceUI/* ./
+COPY Frontend/* ./
 
 
 # set to non-root user

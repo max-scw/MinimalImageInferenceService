@@ -1,24 +1,24 @@
 import streamlit as st
-import numpy as np
 import logging
 
+from utils import get_env_variable
 from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
 from utils_image import save_image, bytes_to_image
 from config import get_config_from_environment_variables
-# from plot import plot_bboxs
 from plot_pil import plot_bboxs
 
 
 @st.cache_data
 def get_config():
-    print(f"DEBUG: get_config()")
+    logging.info("get_config()")
     return get_config_from_environment_variables()
 
 
 def main():
-    model_info, camera_info, app_settings = get_config()
     # st.set_page_config(page_title=app_settings.impress.project_name, page_icon=":camera:")  #:rocket: # must be
+
+    model_info, camera_info, app_settings = get_config()
 
     if "overruled" not in st.session_state:
         st.session_state.overruled = False

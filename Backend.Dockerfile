@@ -8,7 +8,7 @@ LABEL author=SCHWMAX
 LABEL version=2024.03.19
 
 # Environment variables (default values)
-ENV LOGFILE=ModelBackend
+ENV LOGFILE=ToyInferenceBackend
 
 ARG DEBIAN_FRONTEND=noninteractived
 
@@ -25,12 +25,12 @@ RUN mkdir "data"
 
 
 # Install requirements
-COPY ModelBackend/requirements.txt requirements.txt
+COPY Backend/requirements.txt requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
 ADD utils ./utils/
-COPY ModelBackend/* ./
+COPY Backend/* ./
 
 
 # set to non-root user

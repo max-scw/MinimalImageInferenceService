@@ -21,7 +21,6 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
 
 
 def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppSettings]:
-
     config = get_config("TI")
     # impress
     impress = ImpressInfo(
