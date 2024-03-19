@@ -46,7 +46,7 @@ def build_url(camera_info: CameraInfo) -> str:
         params["emulate_camera"] = camera_info.emulate_camera
 
     # build url
-    url = camera_info.address + f"?{urllib.parse.urlencode(params)}"
+    url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
     return url
 
 
