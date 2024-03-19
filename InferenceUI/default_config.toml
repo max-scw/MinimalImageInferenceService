@@ -6,7 +6,7 @@ additional_info=""
 project_link=""
 
 [camera]
-url="balser-api:5050"
+url="http://balser-api:5050/basler/take-photo"
 exposure_time_microseconds=10000
 # camera address
 serial_number=""
