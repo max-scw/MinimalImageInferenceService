@@ -1,0 +1,7 @@
+[model]
+#filename="model.onnx"
+#folder_data="data/"
+filename="20240306_VIAB1-2_YOLOv7tiny.onnx"
+folder_data="./"
+image_size=[640, 640]
+precision="fp32"
