@@ -3,6 +3,15 @@ from pathlib import Path
 
 from typing import Optional, List, Dict, Tuple, Union, Literal
 
+from utils_streamlit import ImpressInfo
+
+
+class AppSettings(BaseModel):
+    data_folder: Path
+    impress: Optional[ImpressInfo] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+
 
 class ModelInfo(BaseModel):
     path: Union[str, Path]
