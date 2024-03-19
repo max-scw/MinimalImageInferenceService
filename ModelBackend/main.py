@@ -8,7 +8,6 @@ import onnxruntime as ort
 import logging
 from pathlib import Path
 
-from typing import List
 
 from utils import get_config
 from utils_image import scale_coordinates_to_image_size, prepare_image, image_from_bytes
