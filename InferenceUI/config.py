@@ -4,9 +4,9 @@ import yaml
 from datetime import datetime
 from ast import literal_eval
 
-from utils import get_environment_variables, get_env_variable
+from utils import get_config
 from utils_streamlit import ImpressInfo
-from data_models import (ModelInfo, CameraInfo, AppSettings)
+from DataModels import (ModelInfo, CameraInfo, AppSettings)
 
 from typing import Union, List, Tuple
 
@@ -20,36 +20,9 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
     return path
 
 
-def load_default_config() -> dict:
-    with open(Path("./default_config.toml"), "rb") as fid:
-        config_default = tomllib.load(fid)
-    config_default_env = dict()
-
-    for group in config_default:
-        for ky, vl in config_default[group].items():
-            # variable name
-            var_nm = "_".join([group, ky]).upper()
-            # nm = "_".join([prefix, var_nm]).upper()
-            config_default_env[var_nm] = vl if vl else None
-    return config_default_env
-
-
-def get_config() -> dict:
-    # --- load default config
-    config_default = load_default_config()
-
-    # get custom config
-    prefix = get_env_variable("PREFIX", "TI")
-    config_environment_vars = get_environment_variables(rf"{prefix}_", False)
-    # merge configs
-
-    config = config_default | config_environment_vars
-    return config
-
-
 def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppSettings]:
 
-    config = get_config()
+    config = get_config("TI")
     # impress
     impress = ImpressInfo(
         project_name=config["IMPRESS_PROJECT_NAME"],
@@ -75,11 +48,8 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         emulate_camera=config["CAMERA_EMULATE_CAMERA"] if config["CAMERA_EMULATE_CAMERA"] else False
     )
 
-    filename = Path(config["MODEL_FILENAME"])
     folder_head = Path(config["MODEL_FOLDER_HEAD"])
     folder_data = Path(config["MODEL_FOLDER_DATA"])
-
-    path_to_model = look_for_file(filename, [folder_head, folder_data])
 
     maps = dict()
     for ky in ["MODEL_CLASS_MAP", "MODEL_COLOR_MAP"]:
@@ -111,18 +81,17 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         maps[ky] = map_
 
     model_info = ModelInfo(
-        path=path_to_model,
+        url=config["MODEL_URL"],
         class_map=maps["MODEL_CLASS_MAP"],
         color_map=maps["MODEL_COLOR_MAP"],
-        image_size=config["MODEL_IMAGE_SIZE"],
-        precision=config["MODEL_PRECISION"]
     )
 
     app_settings = AppSettings(
         data_folder=folder_data,
         impress=impress,
-        title=config["TITLE"] if "TITLE" in config else None,
-        description=config["DESCRIPTION"] if "DESCRIPTION" in config else None
+        title=config["GENERAL_TITLE"] if "GENERAL_TITLE" in config else None,
+        description=config["GENERAL_DESCRIPTION"] if "GENERAL_DESCRIPTION" in config else None,
+        file_type_save_image=config["GENERAL_FILE_TYPE_SAVE_IMAGE"]
     )
     print(f"DEBUG config: {config}")
     return model_info, camera_info, app_settings

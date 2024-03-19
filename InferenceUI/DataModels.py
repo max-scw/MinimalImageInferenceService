@@ -11,14 +11,13 @@ class AppSettings(BaseModel):
     impress: Optional[ImpressInfo] = None
     title: Optional[str] = None
     description: Optional[str] = None
+    file_type_save_image: Optional[str] = ".webp"
 
 
 class ModelInfo(BaseModel):
-    path: Union[str, Path]
+    url: Union[str, Path]
     class_map: Optional[Dict[int, str]] = None
     color_map: Optional[Dict[int, str]] = None
-    image_size: Optional[Tuple[int, int]] = None
-    precision: Optional[Literal["fp32", "fp16", "int8"]] = "fp32"
 
 
 class CameraInfo(BaseModel):

@@ -6,7 +6,7 @@ additional_info=""
 project_link=""
 
 [camera]
-url="http://balser-api:5050/basler/take-photo"
+url="http://localhost:5005/test/image"
 exposure_time_microseconds=10000
 # camera address
 serial_number=""
@@ -19,10 +19,11 @@ destination_port=""
 emulate_camera=false
 
 [model]
-filename="model.onnx"
+url="http://localhost:5007/inference"
 folder_head="/home/app/"
 folder_data="data/"
 class_map=""
 color_map=""
-image_size=[640, 640]
-precision="fp32"
+
+[general]
+file_type_save_image=".webp"

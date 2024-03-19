@@ -1,15 +1,15 @@
 import requests
-import cv2 as cv
 import numpy as np
 import urllib.parse
 
-from typing import Union
+from typing import Union, Dict, List
+import logging
 
 
-from data_models import CameraInfo
+from DataModels import CameraInfo
 
 
-def trigger_camera(camera_info: CameraInfo) -> np.ndarray:
+def trigger_camera(camera_info: CameraInfo) -> bytes:
     """
     wrapper
     :param camera_info:
@@ -61,14 +61,35 @@ def request_camera(address: str) -> Union[np.ndarray, None]:
     # 3xx: Redirection – Indicates that the client must take some additional action in order to complete their request.
     # 4xx: Client Error – This category of error status codes points the finger at clients.
     # 5xx: Server Error – The server takes responsibility for these error status codes.
-    out = None
+    content = None
     if 200 <= status_code < 300:
-        # success
-        img_ary = np.frombuffer(r.content, np.uint8)
-        out = cv.imdecode(img_ary, cv.IMREAD_COLOR)
+        # output buffer
+        content = r.content
     elif 400 <= status_code < 600:
         # error
         raise Exception(f"Server returned status code {status_code}")
-    return out
+    return content
 
 
+def request_model_inference(
+        address: str,
+        image_raw: bytes,
+        extension: str
+) -> Dict[str, Union[List[int], List[float], List[List[float]]]]:
+    logging.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
+
+    # Send the POST request with the image
+    ext = extension.strip(".")
+    content = {"file": (f"image.{ext}", image_raw, f"image/{ext}")}
+
+    response = requests.post(address, files=content)
+
+    msg = f"request_model_inference(): {response}"
+    logging.info(msg)
+    print(msg)
+
+    # Check the response
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Inference returned status code {response.status_code} with message {response.text}")
