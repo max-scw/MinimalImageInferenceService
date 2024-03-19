@@ -32,7 +32,7 @@ def main():
         st.session_state.buttons_disabled = True
 
     if app_settings.title:
-        st.title("app_settings.title")
+        st.title(app_settings.title)
     if app_settings.description:
         st.write(app_settings.description)
 
