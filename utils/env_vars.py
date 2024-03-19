@@ -31,6 +31,7 @@ re_float = re.compile(r"^((\d+\.(\d+)?)|(\.\d+))$")
 re_float_de = re.compile(r"^((\d+,(\d+)?)|(,\d+))$")
 re_boolean = re.compile(r"^(true|false)$", re.IGNORECASE | re.ASCII)
 re_list_or_tuple_or_dict = re.compile(r"^\s*(\[.*\]|\(.*\)|\{.*\})\s*$", re.ASCII)
+re_comma = re.compile(r"^(\".*\")|(\'.*\')$", re.ASCII)
 
 
 def cast(var: str) -> Union[None, int, float, str, bool]:
@@ -46,4 +47,7 @@ def cast(var: str) -> Union[None, int, float, str, bool]:
         var = True if var[0].lower() == "t" else False
     elif re_list_or_tuple_or_dict.match(var):
         var = literal_eval(var)
+    elif re_comma.match(var):
+        # strip enclosing high comma
+        var = var.strip('"').strip('"')
     return var
