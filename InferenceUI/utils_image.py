@@ -1,6 +1,7 @@
 from pathlib import Path
 import cv2
 import numpy as np
+from datetime import datetime
 
 from typing import Union, Tuple, Literal
 
@@ -106,3 +107,47 @@ def precision_to_type(precision: Literal["fp64", "fp32", "fp16", "int8"]) -> typ
     else:
         raise ValueError(f"Unknown precision: {precision}")
 
+
+def save_image(image: np.ndarray, export_path: Path, marker: str = None) -> Path:
+    # create "unique" filename
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if marker:
+        filename += f"_{marker}"
+    # add suffix
+    filename += ".webp"
+
+    # write image to path
+    path_to_file = export_path / filename
+    if not path_to_file.exists():
+        cv2.imwrite(path_to_file.as_posix(), image)
+    # return file path
+    return path_to_file
+
+
+def scale_coordinates_to_image_size(bboxs: np.ndarray, size_src: Tuple[int, int], size_des: Tuple[int, int]) -> np.ndarray:
+    """
+    Scale coordinates of bounding boxes to the size of the original image.
+
+    Parameters:
+        bboxs (np.ndarray): Array of bounding box coordinates in format [[x0, y0, x1, y1], ...].
+        size_src (Tuple[int, int]): Size of the source image (width, height).
+        size_des (Tuple[int, int]): Size of the destination image (width, height).
+
+    Returns:
+        np.ndarray: Array of scaled bounding box coordinates.
+    """
+    width_src, height_src = size_src
+    width_des, height_des = size_des
+
+    # Calculate scaling factors
+    scale_x = width_des / width_src
+    scale_y = height_des / height_src
+
+    # Scale bounding box coordinates
+    scaled_bboxs = np.zeros_like(bboxs, dtype=np.float32)
+    scaled_bboxs[:, 0] = bboxs[:, 0] * scale_x
+    scaled_bboxs[:, 1] = bboxs[:, 1] * scale_y
+    scaled_bboxs[:, 2] = bboxs[:, 2] * scale_x
+    scaled_bboxs[:, 3] = bboxs[:, 3] * scale_y
+
+    return scaled_bboxs
