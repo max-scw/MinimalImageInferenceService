@@ -18,59 +18,60 @@ services:
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
-      - 5005:5050  # external access port | can be closed
+      - 5005:5050  # external access port | only for debugging
 
-  model-backend:
+  inference-backend:
     build:
       context: ./
-      dockerfile: ModelBackend.Dockerfile
-    image: schwmax/model-backend
-    container_name: model-backend
+      dockerfile: Backend.Dockerfile
+    image: schwmax/toy-inference-backend
+    container_name: backend-onnx
     environment:
       - TZ=Europe/Berlin
-      - MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
+#      - MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
       - MODEL_IMAGE_SIZE=(544, 640)
       - MODEL_PRECISION=fp32
+#      - MODEL_PRECISION=fp16
     volumes:
       - ./UIdata/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/data/model.onnx
+#      - ./UIdata/20240306_VIAB1-2_YOLOv7tiny.onnx_fp16:/home/app/data/model.onnx
     ports:
-      - 5007:5050  # external access port // only for debugging
+      - 5007:5050  # external access port | only for debugging
 
-  toy-inference:
+  inference-frontend:
     build:
       context: ./
-      dockerfile: InferenceUI.Dockerfile
-    image: schwmax/inference-ui
-    container_name: toy-inference
+      dockerfile: Frontend.Dockerfile
+    image: schwmax/toy-inference-frontend
+    container_name: frontend-streamlit
 #    restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       # variables to customize container
 #      - PREFIX=TI
-      - TI_TITLE="MVE for object recognition"
-      - TI_DESCRIPTION="loreipsum ..."
+      - TI_GENERAL_TITLE="MVE for object recognition"
+      - TI_GENERAL_DESCRIPTION="loreipsum ..."
       # model
-      - TI_MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
+      - TI_MODEL_URL=http://inference-backend:5050/inference
 #      - TI_MODEL_CLASS_MAP=
       - TI_MODEL_COLOR_MAP=colors.txt
-      - TI_MODEL_IMAGE_SIZE=(544, 640)
-      - TI_MODEL_PRECISION=fp32
+#      - TI_MODEL_IMAGE_SIZE=(544, 640)
       # camera
-#      - TI_CAMERA_URL=http://basler-api:5050/basler/take-photo
       - TI_CAMERA_URL=http://basler-api:5050/test/image
-#      - TI_CAMERA_SERIAL_NUMBER
-#      - TI_CAMERA_IP_ADDRESS
+#      - TI_CAMERA_URL=http://basler-api:5050/basler/take-photo
+#      - TI_CAMERA_SERIAL_NUMBER=24339728
+      - TI_CAMERA_IP_ADDRESS="192.168.10.5"
 #      - TI_CAMERA_TIMEOUT
-#      - TI_CAMERA_TRANSMISSION_TYPE
-#      - TI_CAMERA_DESTINATION_IP_ADDRESS
-#      - TI_CAMERA_DESTINATION_PORT
-      - TI_CAMERA_EMULATE_CAMERA=True
+      - TI_CAMERA_TRANSMISSION_TYPE=Multicast
+      - TI_CAMERA_DESTINATION_IP_ADDRESS="192.168.10.221"
+      - TI_CAMERA_DESTINATION_PORT=46000
+#      - TI_CAMERA_EMULATE_CAMERA=True
       # impress
-      - TI_IMPRESS_PROJECT_NAME="MVE inference UI test"
-#      - TI_IMPRESS_AUTHOR
+      - TI_IMPRESS_PROJECT_NAME="Minimal Inference"
+      - TI_IMPRESS_AUTHOR=SCHWMAX
 #      - TI_IMPRESS_STATUS
 #      - TI_IMPRESS_ADDITIONAL_INFO
-#      - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
+      - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
 
     volumes:
       # mount model into container
