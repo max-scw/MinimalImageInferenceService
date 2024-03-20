@@ -1,11 +1,13 @@
 from pathlib import Path
-import tomllib
 import yaml
 from datetime import datetime
 from ast import literal_eval
+import logging
 
 from utils import get_config
 from utils_streamlit import ImpressInfo
+from utils_coordinates import load_yaml
+
 from DataModels import (ModelInfo, CameraInfo, AppSettings)
 
 from typing import Union, List, Tuple
@@ -22,6 +24,10 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
 
 def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppSettings]:
     config = get_config("TI")
+    msg = f"get_config_from_environment_variables(): config={config}"
+    logging.info(msg)
+    print(msg)
+
     # impress
     impress = ImpressInfo(
         project_name=config["IMPRESS_PROJECT_NAME"],
@@ -90,7 +96,8 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         impress=impress,
         title=config["GENERAL_TITLE"] if "GENERAL_TITLE" in config else None,
         description=config["GENERAL_DESCRIPTION"] if "GENERAL_DESCRIPTION" in config else None,
-        file_type_save_image=config["GENERAL_FILE_TYPE_SAVE_IMAGE"]
+        file_type_save_image=config["GENERAL_FILE_TYPE_SAVE_IMAGE"],
+        bbox_pattern=load_yaml(config["GENERAL_FILE_BOX_PATTERN"])
     )
     print(f"DEBUG config: {config}")
     return model_info, camera_info, app_settings

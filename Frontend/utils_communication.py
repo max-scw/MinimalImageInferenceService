@@ -9,13 +9,15 @@ import logging
 from DataModels import CameraInfo
 
 
-def trigger_camera(camera_info: CameraInfo) -> bytes:
+def trigger_camera(camera_info: CameraInfo) -> Union[bytes, None]:
     """
     wrapper
     :param camera_info:
     :return:
     """
-    return request_camera(build_url(camera_info))
+    url = build_url(camera_info)
+    print(f"trigger_camera(): url={url}")
+    return request_camera(url)
 
 
 def build_url(camera_info: CameraInfo) -> str:
@@ -50,8 +52,8 @@ def build_url(camera_info: CameraInfo) -> str:
     return url
 
 
-def request_camera(address: str) -> Union[np.ndarray, None]:
-    print(f"Requesting camera {address}")
+def request_camera(address: str) -> Union[bytes, None]:
+    logging.debug(f"Requesting camera {address}")
     r = requests.get(url=address)
 
     status_code = r.status_code

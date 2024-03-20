@@ -1,18 +1,29 @@
 import streamlit as st
 import logging
+import numpy as np
 
-from utils import get_env_variable
 from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
 from utils_image import save_image, bytes_to_image
+from utils_coordinates import check_boxes
 from config import get_config_from_environment_variables
 from plot_pil import plot_bboxs
 
 
 @st.cache_data
 def get_config():
-    logging.info("get_config()")
+    logging.debug("get_config()")
     return get_config_from_environment_variables()
+
+
+def reset_session_state_image():
+    st.session_state["image"] = {
+        "overruled": False,
+        "raw": None,
+        "bboxes": None,
+        "decision": False,
+        "pattern_name": ""
+    }
 
 
 def main():
@@ -20,16 +31,13 @@ def main():
 
     model_info, camera_info, app_settings = get_config()
 
-    if "overruled" not in st.session_state:
-        st.session_state.overruled = False
-    if "image_raw" not in st.session_state:
-        st.session_state.image_raw = None
-    if "image_bboxs" not in st.session_state:
-        st.session_state.image_bboxs = None
+    if "image" not in st.session_state:
+        reset_session_state_image()
     if "show_bboxs" not in st.session_state:
         st.session_state.show_bboxs = True
     if "buttons_disabled" not in st.session_state:
         st.session_state.buttons_disabled = True
+
 
     if app_settings.title:
         st.title(app_settings.title)
@@ -63,17 +71,17 @@ def main():
             "Overrule decision",
             help="Flags the image as wrongly classified",
             type="secondary",
-            disabled=st.session_state.buttons_disabled or st.session_state.overruled
+            disabled=st.session_state.buttons_disabled or st.session_state.image["overruled"]
         )
 
     # processing
     if camera_triggered:
-        st.session_state.overruled = False
+        reset_session_state_image()
         with st.spinner("taking photo ..."):
             img_raw = trigger_camera(camera_info)
 
         # keep image in session state
-        st.session_state.image_raw = bytes_to_image(img_raw)
+        st.session_state.image["raw"] = bytes_to_image(img_raw)
 
         with st.spinner("analyzing model ..."):
             logging.info(f"main(): request_model_inference({model_info.url}), ...)")
@@ -82,6 +90,9 @@ def main():
                 image_raw=img_raw,
                 extension=".bmp"
             )
+            msg = f"main(): {result} = request_model_inference(...)"
+            logging.info(msg)
+            print(msg)
 
             if isinstance(result, dict):
                 bboxes = result["bboxes"]
@@ -93,25 +104,39 @@ def main():
         with st.spinner("draw bounding boxes ..."):
             if bboxes:
                 img_draw = plot_bboxs(
-                    st.session_state.image_raw.convert("RGB"),
+                    st.session_state.image["raw"].convert("RGB"),
                     bboxes,
                     scores,
                     class_ids,
                     class_map=model_info.class_map,
                     color_map=model_info.color_map
                 )
-                st.session_state.image_bboxs = img_draw
+                st.session_state.image["bboxes"] = img_draw
                 st.session_state.show_bboxs = True
 
+        with st.spinner("check bounding boxes ..."):
+            if bboxes:
+                # scale boxes to relative coordinates
+                imgsz = img_draw.size
+                bboxes_rel = np.array(bboxes) / (imgsz * 2)
+
+                pattern_name, lg = check_boxes(bboxes_rel, class_ids, app_settings.bbox_pattern)
+                print(f"DEBUG main(): check_boxes(): {pattern_name}, {lg}")
+                st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
+                st.session_state.image["pattern_name"] = pattern_name
+
+    if st.session_state.image["decision"]:
+        st.success(f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}", icon="✅")
+
     # show image
-    img2show = st.session_state.image_bboxs if toggle_boxes else st.session_state.image_raw
+    img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["raw"]
     if img2show is not None:
         st.image(img2show)
 
     if overrule_decision:
-        save_image(st.session_state.image_raw, app_settings.data_folder)
+        save_image(st.session_state.image["raw"], app_settings.data_folder)
         # make sure that the image is not saved twice
-        st.session_state.overruled = True
+        st.session_state.image["overruled"] = True
 
     # impress
     if app_settings.impress:
