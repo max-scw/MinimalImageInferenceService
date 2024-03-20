@@ -59,9 +59,9 @@ async def predict(file: UploadFile = File(...)):
     bboxes = scale_coordinates_to_image_size(bboxes, img_mdl.shape[2:], image.shape[:2])
 
     content = {
-        "bboxes": bboxes.tolist(),
-        "class_ids": class_ids.tolist(),
-        "scores": scores.tolist()
+        "bboxes": bboxes.round(1).tolist(),
+        "class_ids": class_ids.astype(int).tolist(),
+        "scores": scores.round(3).tolist()
     }
     return JSONResponse(content=content)
 
