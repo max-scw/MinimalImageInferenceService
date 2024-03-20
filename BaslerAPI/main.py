@@ -258,7 +258,7 @@ def return_test_image(
         destination_port: int = None
 ):
     # load file
-    image_path = get_env_variable("TEST_IMAGE", None)
+    image_path = get_env_variable("TEST_IMAGE", "240222_131544_0000000028_CAM1_NORMAL_OK.bmp")  # FIXME: default test image
     if image_path and Path(image_path).is_file():
         image_path = Path(image_path)
         return FileResponse(
@@ -271,4 +271,4 @@ def return_test_image(
 
 
 if __name__ == "__main__":
-    uvicorn.run(app=app, port=5050)
+    uvicorn.run(app=app, port=5051)
