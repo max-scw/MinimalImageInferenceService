@@ -22,7 +22,8 @@ def reset_session_state_image():
         "raw": None,
         "bboxes": None,
         "decision": False,
-        "pattern_name": ""
+        "pattern_name": "",
+        "pattern_lg": None
     }
 
 
@@ -120,13 +121,22 @@ def main():
                 imgsz = img_draw.size
                 bboxes_rel = np.array(bboxes) / (imgsz * 2)
 
-                pattern_name, lg = check_boxes(bboxes_rel, class_ids, app_settings.bbox_pattern)
+                pattern_name, lg = check_boxes(bboxes_rel.tolist(), class_ids, app_settings.bbox_pattern)
                 print(f"DEBUG main(): check_boxes(): {pattern_name}, {lg}")
                 st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
                 st.session_state.image["pattern_name"] = pattern_name
+                st.session_state.image["pattern_lg"] = lg
 
     if st.session_state.image["decision"]:
         st.success(f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}", icon="✅")
+    else:
+        # st.warning('This is a warning', icon="⚠️")
+        if st.session_state.image["pattern_lg"] is not None:
+            st.error(
+                f"Not all objects were found. "
+                f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}.",
+                icon="🚨"
+            )
 
     # show image
     img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["raw"]

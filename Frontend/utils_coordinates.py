@@ -33,7 +33,7 @@ def check_boxes(
 
     # loop through config to find box pattern
     info = ""
-    found_boxes = []
+    found_boxes_best = []
     for ky, vl in config.items():
         tol = vl["tolerance"]
         # reset found_boxes
@@ -51,10 +51,13 @@ def check_boxes(
                     break
             found_boxes.append(found)
 
-        if all(found_boxes):
+        if sum(found_boxes) > sum(found_boxes_best):
             info = ky
-            break
-    return info, found_boxes
+            found_boxes_best = found_boxes
+            if all(found_boxes_best):
+                break
+
+    return info, found_boxes_best
 
 
 def check_box(id_act, bbx_act, id_des, bbx_des, tol) -> bool:
