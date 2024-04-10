@@ -50,7 +50,7 @@ EXPOSE 8501
 
 ## Start the app
 # Copy the entrypoint script into the container
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY Frontend/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set execute permissions for the entrypoint script
 RUN chmod +x /usr/local/bin/entrypoint.sh
