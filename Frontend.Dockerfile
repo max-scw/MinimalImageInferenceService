@@ -19,7 +19,7 @@ RUN printf "deb https://deb.debian.org/debian bullseye main \
 
 
 # new default user
-RUN useradd -ms /bin/bash app
+RUN useradd -ms /bin/bash appuser
 # Set the working directory
 WORKDIR /home/app
 RUN mkdir ./data
@@ -38,8 +38,8 @@ COPY Frontend/* ./
 
 # set to non-root user
 USER root
-RUN chown -R app:app /home/app
-USER app
+RUN chown -R appuser:appuser /home/app
+USER appuser
 
 # Define the health check using curl for both HTTP and HTTPS
 HEALTHCHECK --interval=30s --timeout=5s \
@@ -49,6 +49,14 @@ HEALTHCHECK --interval=30s --timeout=5s \
 EXPOSE 8501
 
 ## Start the app
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
+# Copy the entrypoint script into the container
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Set execute permissions for the entrypoint script
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set the entrypoint script as the entrypoint for the container
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+#CMD ["tail", "-f", "/dev/null"]
 
