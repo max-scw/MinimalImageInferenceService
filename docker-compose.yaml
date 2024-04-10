@@ -33,8 +33,8 @@ services:
       - MODEL_PRECISION=fp32
 #      - MODEL_PRECISION=fp16
     volumes:
-      - ./data/20231220_YOLOv7-tiny_CRU_best.onnx:/home/app/data/model.onnx:ro
-#      - ./data/20231220_YOLOv7-tiny_CRU_best.onnx_fp16:/home/app/data/model.onnx
+      - ./data/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/data/model.onnx:ro
+#      - ./data/20240306_VIAB1-2_YOLOv7tiny.onnx_fp16:/home/app/data/model.onnx
     ports:
       - 5007:5050  # external access port | only for debugging
 
