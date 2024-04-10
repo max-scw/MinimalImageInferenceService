@@ -34,28 +34,29 @@ def check_boxes(
     # loop through config to find box pattern
     info = ""
     found_boxes_best = []
-    for ky, vl in config.items():
-        tol = vl["tolerance"]
-        # reset found_boxes
-        found_boxes = []
-        for pos in vl["positions"]:
-            id_des = pos[0]
-            bbx_des = pos[1:5]
+    if config:
+        for ky, vl in config.items():
+            tol = vl["tolerance"]
+            # reset found_boxes
+            found_boxes = []
+            for pos in vl["positions"]:
+                id_des = pos[0]
+                bbx_des = pos[1:5]
 
-            # loop through actual boxes
-            found = False
-            for bbx_act, id_act in zip(bboxes, class_ids):
-                found = check_box(id_act, bbx_act, id_des, bbx_des, tol)
-                # shortcut
-                if found:
+                # loop through actual boxes
+                found = False
+                for bbx_act, id_act in zip(bboxes, class_ids):
+                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol)
+                    # shortcut
+                    if found:
+                        break
+                found_boxes.append(found)
+
+            if sum(found_boxes) > sum(found_boxes_best):
+                info = ky
+                found_boxes_best = found_boxes
+                if all(found_boxes_best):
                     break
-            found_boxes.append(found)
-
-        if sum(found_boxes) > sum(found_boxes_best):
-            info = ky
-            found_boxes_best = found_boxes
-            if all(found_boxes_best):
-                break
 
     return info, found_boxes_best
 
