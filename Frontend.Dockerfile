@@ -39,7 +39,7 @@ COPY Frontend/* ./
 # set to non-root user
 USER root
 RUN chown -R appuser:appuser /home/app
-USER appuser
+#USER appuser
 
 # Define the health check using curl for both HTTP and HTTPS
 HEALTHCHECK --interval=30s --timeout=5s \
