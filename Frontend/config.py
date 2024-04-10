@@ -66,19 +66,25 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
             # if is YAML file:
             # identify path to file
             path_to_map = look_for_file(mapping, [folder_head, folder_data])
-            logging.info(f"configuration: class map. YAML file {path_to_map}.")
+            logging.info(f"configuration: {ky}. YAML file {path_to_map}.")
             # read file
-            with open(path_to_map, "r") as fid:
-                map_ = yaml.safe_load(fid)
+            if path_to_map.is_file():
+                with open(path_to_map, "r") as fid:
+                    map_ = yaml.safe_load(fid)
+            else:
+                map_ = None
         elif Path(mapping).suffix in (".txt", ".conf"):
             # if is text file:
             # identify path to file
             path_to_map = look_for_file(mapping, [folder_head, folder_data])
-            logging.info(f"configuration: class map. Text file {path_to_map}.")
+            logging.info(f"configuration: {ky}. Text file {path_to_map}.")
             # read file
-            with open(path_to_map, "r") as fid:
-                lines = fid.readlines()
-            map_ = {i: ln.strip() for i, ln in enumerate(lines) if len(ln) > 3}
+            if path_to_map.is_file():
+                with open(path_to_map, "r") as fid:
+                    lines = fid.readlines()
+                map_ = {i: ln.strip() for i, ln in enumerate(lines) if len(ln) > 3}
+            else:
+                map_ = None
         else:
             # else is string
             map_ = literal_eval(mapping)
