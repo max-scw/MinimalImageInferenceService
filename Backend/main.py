@@ -16,7 +16,9 @@ from utils_image import scale_coordinates_to_image_size, prepare_image, image_fr
 CONFIG = get_config(default_prefix="")
 model_path = Path(CONFIG["MODEL_FOLDER_DATA"]) / CONFIG["MODEL_FILENAME"]
 path_to_model_file = model_path.with_suffix(".onnx")
-logging.info(f"Loading model from {path_to_model_file} (file exists: {path_to_model_file.exists()})")
+msg = f"Loading model from {path_to_model_file} (file exists: {path_to_model_file.exists()})"
+logging.info(msg)
+print("INFO " + msg)
 ONNX_SESSION = ort.InferenceSession(path_to_model_file)
 
 
@@ -57,7 +59,9 @@ async def predict(file: UploadFile = File(...)):
     scores = results[0][:, 6]
 
     # re-scale boxes
-    logging.debug(f"predict(): img_mdl.shape={img_mdl.shape}, image.shape={image.shape}")
+    msg = f"predict(): img_mdl.shape={img_mdl.shape}, image.shape={image.shape}"
+    logging.debug(msg)
+    print("DEBUG " + msg)
     bboxes = scale_coordinates_to_image_size(bboxes, img_mdl.shape[2:], image.shape[:2])
 
     content = {
