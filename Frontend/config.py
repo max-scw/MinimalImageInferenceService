@@ -60,12 +60,13 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
     for ky in ["MODEL_CLASS_MAP", "MODEL_COLOR_MAP"]:
         mapping = config[ky]
 
-        if mapping is None:
+        if mapping is None or mapping == "":
             map_ = None
         elif Path(mapping).suffix in (".yaml", ".yml"):
             # if is YAML file:
             # identify path to file
             path_to_map = look_for_file(mapping, [folder_head, folder_data])
+            logging.info(f"configuration: class map. YAML file {path_to_map}.")
             # read file
             with open(path_to_map, "r") as fid:
                 map_ = yaml.safe_load(fid)
@@ -73,6 +74,7 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
             # if is text file:
             # identify path to file
             path_to_map = look_for_file(mapping, [folder_head, folder_data])
+            logging.info(f"configuration: class map. Text file {path_to_map}.")
             # read file
             with open(path_to_map, "r") as fid:
                 lines = fid.readlines()
