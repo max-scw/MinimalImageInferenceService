@@ -15,7 +15,9 @@ from utils_image import scale_coordinates_to_image_size, prepare_image, image_fr
 
 CONFIG = get_config(default_prefix="")
 model_path = Path(CONFIG["MODEL_FOLDER_DATA"]) / CONFIG["MODEL_FILENAME"]
-ONNX_SESSION = ort.InferenceSession(model_path.with_suffix(".onnx"))
+path_to_model_file = model_path.with_suffix(".onnx")
+logging.info(f"Loading model from {path_to_model_file} (file exists: {path_to_model_file.exists()})")
+ONNX_SESSION = ort.InferenceSession(path_to_model_file)
 
 
 ENTRYPOINT_INFERENCE = "/inference"
