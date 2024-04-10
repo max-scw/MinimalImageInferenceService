@@ -1,5 +1,4 @@
 import requests
-import numpy as np
 import urllib.parse
 
 from typing import Union, Dict, List
@@ -16,7 +15,10 @@ def trigger_camera(camera_info: CameraInfo) -> Union[bytes, None]:
     :return:
     """
     url = build_url(camera_info)
-    print(f"trigger_camera(): url={url}")
+    msg = f"trigger_camera(): url={url}"
+    logging.debug(msg)
+    print("DEBUG: " + msg)
+
     return request_camera(url)
 
 
@@ -53,7 +55,9 @@ def build_url(camera_info: CameraInfo) -> str:
 
 
 def request_camera(address: str) -> Union[bytes, None]:
-    logging.debug(f"Requesting camera {address}")
+    msg = f"Requesting camera {address}"
+    logging.debug(msg)
+    print("DEBUG request_camera(): " + msg)
     r = requests.get(url=address)
 
     status_code = r.status_code
@@ -78,7 +82,9 @@ def request_model_inference(
         image_raw: bytes,
         extension: str
 ) -> Dict[str, Union[List[int], List[float], List[List[float]]]]:
-    logging.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
+    msg = f"request_model_inference({address}, image={len(image_raw)}, extension={extension})"
+    logging.debug(msg)
+    print("DEBUG request_model_inference(): " + msg)
 
     # Send the POST request with the image
     ext = extension.strip(".")
@@ -88,7 +94,7 @@ def request_model_inference(
 
     msg = f"request_model_inference(): {response}"
     logging.info(msg)
-    print(msg)
+    print("INFO request_model_inference(): " + msg)
 
     # Check the response
     if response.status_code == 200:

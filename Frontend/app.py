@@ -12,7 +12,6 @@ from plot_pil import plot_bboxs
 
 @st.cache_data
 def get_config():
-    logging.debug("get_config()")
     return get_config_from_environment_variables()
 
 
@@ -38,7 +37,6 @@ def main():
         st.session_state.show_bboxs = True
     if "buttons_disabled" not in st.session_state:
         st.session_state.buttons_disabled = True
-
 
     if app_settings.title:
         st.title(app_settings.title)
@@ -85,7 +83,10 @@ def main():
         st.session_state.image["raw"] = bytes_to_image(img_raw)
 
         with st.spinner("analyzing model ..."):
-            logging.info(f"main(): request_model_inference({model_info.url}), ...)")
+            msg = f"main(): request_model_inference({model_info.url}), ...)"
+            logging.info(msg)
+            print("INFO " + msg)
+
             result = request_model_inference(
                 address=model_info.url,
                 image_raw=img_raw,
@@ -93,7 +94,7 @@ def main():
             )
             msg = f"main(): {result} = request_model_inference(...)"
             logging.info(msg)
-            print(msg)
+            print("INFO " + msg)
 
             if isinstance(result, dict):
                 bboxes = result["bboxes"]
