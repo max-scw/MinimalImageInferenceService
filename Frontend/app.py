@@ -4,7 +4,7 @@ import numpy as np
 
 from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
-from utils_image import save_image, bytes_to_image
+from utils_image import save_image, bytes_to_image, resize_image
 from utils_coordinates import check_boxes
 from config import get_config_from_environment_variables
 from plot_pil import plot_bboxs
@@ -19,6 +19,7 @@ def reset_session_state_image():
     st.session_state["image"] = {
         "overruled": False,
         "raw": None,
+        "show": None,
         "bboxes": None,
         "decision": False,
         "pattern_name": "",
@@ -80,7 +81,9 @@ def main():
             img_raw = trigger_camera(camera_info)
 
         # keep image in session state
-        st.session_state.image["raw"] = bytes_to_image(img_raw)
+        image = bytes_to_image(img_raw)
+        st.session_state.image["raw"] = image
+        st.session_state.image["show"] = resize_image(image, app_settings.image_size)
 
         with st.spinner("analyzing model ..."):
             msg = f"main(): request_model_inference({model_info.url}), ...)"
@@ -104,6 +107,7 @@ def main():
                 bboxes, class_ids, scores = [], [], []
 
         with st.spinner("draw bounding boxes ..."):
+
             if bboxes:
                 img_draw = plot_bboxs(
                     st.session_state.image["raw"].convert("RGB"),
@@ -113,10 +117,10 @@ def main():
                     class_map=model_info.class_map,
                     color_map=model_info.color_map
                 )
-                st.session_state.image["bboxes"] = img_draw
+                st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
                 st.session_state.show_bboxs = True
             else:
-                st.session_state.image["bboxes"] = st.session_state.image["raw"]
+                st.session_state.image["bboxes"] = st.session_state.image["show"]
 
         with st.spinner("check bounding boxes ..."):
             if bboxes:
@@ -142,7 +146,7 @@ def main():
             )
 
     # show image
-    img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["raw"]
+    img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["show"]
     if img2show is not None:
         st.image(img2show)
 

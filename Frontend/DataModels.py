@@ -13,6 +13,7 @@ class AppSettings(BaseModel):
     description: Optional[str] = None
     file_type_save_image: Optional[str] = ".webp"
     bbox_pattern: Optional[dict] = None
+    image_size: Optional[Tuple[int, int]] = None
 
 
 class ModelInfo(BaseModel):

@@ -4,6 +4,8 @@ import numpy as np
 from datetime import datetime
 import io
 
+from typing import Tuple
+
 
 def save_image(
         image: Image,
@@ -30,3 +32,11 @@ def save_image(
 def bytes_to_image(raw_image: bytes) -> Image:
     img_ary = np.frombuffer(raw_image, np.uint8)
     return Image.open(io.BytesIO(img_ary))
+
+
+def resize_image(image: Image, size: Tuple[int, int] = None) -> Image:
+    # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters-comparison-table for method comparison
+    if size is not None:
+        return image.thumbnail(size, Image.BICUBIC)
+    else:
+        return image
