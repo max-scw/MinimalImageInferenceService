@@ -115,6 +115,8 @@ def main():
                 )
                 st.session_state.image["bboxes"] = img_draw
                 st.session_state.show_bboxs = True
+            else:
+                st.session_state.image["bboxes"] = st.session_state.image["raw"]
 
         with st.spinner("check bounding boxes ..."):
             if bboxes:
