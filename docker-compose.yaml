@@ -21,11 +21,11 @@ services:
       - 5005:5050  # external access port | only for debugging
 
   inference-backend:
+    container_name: backend-onnx
     build:
       context: ./
       dockerfile: Backend.Dockerfile
     image: schwmax/toy-inference-backend
-    container_name: backend-onnx
     environment:
       - TZ=Europe/Berlin
 #      - MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
@@ -39,11 +39,12 @@ services:
       - 5007:5050  # external access port | only for debugging
 
   inference-frontend:
+    container_name: frontend-streamlit
     build:
       context: ./
       dockerfile: Frontend.Dockerfile
     image: schwmax/toy-inference-frontend
-    container_name: frontend-streamlit
+
 #    restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -52,7 +53,7 @@ services:
       - TI_GENERAL_TITLE="MVE for object recognition"
       - TI_GENERAL_DESCRIPTION="loreipsum ..."
       # model
-      - TI_MODEL_URL=http://inference-backend:5050/inference
+      - TI_MODEL_URL=http://backend-onnx:5050/inference
 #      - TI_MODEL_CLASS_MAP=
       - TI_MODEL_COLOR_MAP=colors.txt
 #      - TI_MODEL_IMAGE_SIZE=(544, 640)
