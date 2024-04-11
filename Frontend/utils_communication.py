@@ -73,7 +73,7 @@ def request_camera(address: str) -> Union[bytes, None]:
         content = r.content
     elif 400 <= status_code < 600:
         # error
-        raise Exception(f"Server returned status code {status_code}")
+        raise Exception(f"Server returned status code {status_code} with message {r.text}")
     return content
 
 

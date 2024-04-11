@@ -86,7 +86,7 @@ def main():
         st.session_state.image["show"] = resize_image(image, app_settings.image_size)
 
         with st.spinner("analyzing model ..."):
-            msg = f"main(): request_model_inference({model_info.url}), ...)"
+            msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
             logging.info(msg)
             print("INFO " + msg)
 
