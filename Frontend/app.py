@@ -123,7 +123,7 @@ def main():
                 st.session_state.image["bboxes"] = st.session_state.image["show"]
 
         with st.spinner("check bounding boxes ..."):
-            if bboxes:
+            if bboxes and (app_settings.bbox_pattern is not None):
                 # scale boxes to relative coordinates
                 imgsz = img_draw.size
                 bboxes_rel = np.array(bboxes) / (imgsz * 2)
@@ -137,8 +137,9 @@ def main():
     if st.session_state.image["decision"]:
         st.success(f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}", icon="✅")
     else:
-        # st.warning('This is a warning', icon="⚠️")
-        if st.session_state.image["pattern_lg"] is not None:
+        if app_settings.bbox_pattern is not None:
+            st.warning("No pattern to check provided. Result could not be checked.", icon="⚠️")
+        elif st.session_state.image["pattern_lg"] is not None:
             st.error(
                 f"Not all objects were found. "
                 f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}.",
