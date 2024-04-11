@@ -18,7 +18,7 @@ services:
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
-      - 5005:5050  # external access port | only for debugging
+#      - 5005:5050  # external access port | only for debugging
 
   inference-backend:
     container_name: backend-onnx
@@ -33,10 +33,10 @@ services:
       - MODEL_PRECISION=fp32
 #      - MODEL_PRECISION=fp16
     volumes:
-      - ./data/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/data/model.onnx:ro
-#      - ./data/20240306_VIAB1-2_YOLOv7tiny.onnx_fp16:/home/app/data/model.onnx
-    ports:
-      - 5007:5050  # external access port | only for debugging
+      - ./models/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/data/model.onnx:ro
+#      - ./models/20240306_VIAB1-2_YOLOv7tiny.onnx_fp16:/home/app/data/model.onnx
+#    ports:
+#      - 5007:5050  # external access port | only for debugging
 
   inference-frontend:
     container_name: frontend-streamlit
@@ -44,7 +44,6 @@ services:
       context: ./
       dockerfile: Frontend.Dockerfile
     image: schwmax/toy-inference-frontend
-
 #    restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -73,9 +72,10 @@ services:
 #      - TI_IMPRESS_STATUS
 #      - TI_IMPRESS_ADDITIONAL_INFO
       - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
+      # general configs
+      - TI_GENERAL_IMAGE_SIZE=(272, 320)
     volumes:
-      # mount model into container
-#      - ./UIdata/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/model.onnx
+      # mount folder to save images to
       - ./data/:/home/app/data/:rw
     ports:
       - 5006:8501  # external access port

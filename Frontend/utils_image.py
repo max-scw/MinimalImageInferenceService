@@ -35,8 +35,14 @@ def bytes_to_image(raw_image: bytes) -> Image:
 
 
 def resize_image(image: Image, size: Tuple[int, int] = None) -> Image:
+    if isinstance(size, (tuple, list)):
+        # PIL expect the size in the reverse order compared to torch
+        size = size[::-1]
+
+    print(f"Resizing image to {size} (from {image.size})")
+    image_ = image.copy()
     # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters-comparison-table for method comparison
     if size is not None:
-        return image.thumbnail(size, Image.BICUBIC)
+        return image_.resize(size, Image.BICUBIC)
     else:
-        return image
+        return image_
