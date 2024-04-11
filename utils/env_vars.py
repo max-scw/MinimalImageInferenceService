@@ -14,8 +14,8 @@ def get_env_variable(key: str, default_value):
     return cast(os.environ[key]) if key in os.environ else default_value
 
 
-def get_environment_variables(prefix: str, with_prefix: bool = True) -> Dict[str, Any]:
-    re_prefix = re.compile(prefix)
+def get_environment_variables(prefix: str = None, with_prefix: bool = True) -> Dict[str, Any]:
+    re_prefix = re.compile(prefix if prefix is not None else "")
     config = dict()
     for ky in os.environ:
         m = re_prefix.match(ky)

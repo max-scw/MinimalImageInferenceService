@@ -30,7 +30,7 @@ def get_config(default_prefix: str) -> dict:
 
     # get custom config
     prefix = get_env_variable("PREFIX", default_prefix)
-    config_environment_vars = get_environment_variables(rf"{prefix}_", False)
+    config_environment_vars = get_environment_variables(rf"{prefix}_" if prefix else "", False)
 
     # merge configs
     config = config_default | config_environment_vars
