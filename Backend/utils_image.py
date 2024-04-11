@@ -57,20 +57,20 @@ def letterbox(
         new_shape = (new_shape, new_shape)
 
     # Scale ratio (new / old)
-    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+    ratio = (new_shape[0] / shape[0], new_shape[1] / shape[1])
     if not scale_up:  # only scale down, do not scale up (for better test mAP)
-        r = min(r, 1.0)
+        ratio = (min(el, 1.0) for el in ratio)
 
     # Compute padding
-    ratio = r, r  # width, height ratios
-    new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+    new_unpad = (int(round(shape[1] * ratio[1])), int(round(shape[0] * ratio[0])))
+    dw = new_shape[1] - new_unpad[0]  # wh padding
+    dh = new_shape[0] - new_unpad[1]
     if auto:  # minimum rectangle
         dw, dh = np.mod(dw, stride), np.mod(dh, stride)  # wh padding
     elif scale_fill:  # stretch
         dw, dh = 0.0, 0.0
         new_unpad = (new_shape[1], new_shape[0])
-        ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
+        ratio = (new_shape[1] / shape[1], new_shape[0] / shape[0])  # width, height ratios
 
     dw /= 2  # divide padding into 2 sides
     dh /= 2
@@ -88,7 +88,9 @@ def prepare_image(
         shape: Tuple[int, int],
         precision: Literal["fp64", "fp32", "fp16", "int8"] = None
 ) -> np.ndarray:
-    logging.debug(f"prepare_image({image.shape}, {shape}, {precision})")
+    msg = f"prepare_image({image.shape}, {shape}, {precision})"
+    logging.debug(msg)
+    print("DEBUG: " + msg)
     # resize
     img_sml = letterbox(image, new_shape=shape, stride=32)[0]
     # move channels
@@ -133,7 +135,11 @@ def save_image(image: np.ndarray, export_path: Path, marker: str = None) -> Path
     return path_to_file
 
 
-def scale_coordinates_to_image_size(bboxs: np.ndarray, size_src: Tuple[int, int], size_des: Tuple[int, int]) -> np.ndarray:
+def scale_coordinates_to_image_size(
+        bboxs: np.ndarray,
+        size_src: Tuple[int, int],
+        size_des: Tuple[int, int]
+) -> np.ndarray:
     """
     Scale coordinates of bounding boxes to the size of the original image.
 

@@ -21,6 +21,11 @@ logging.info(msg)
 print("INFO " + msg)
 ONNX_SESSION = ort.InferenceSession(path_to_model_file)
 
+# log input shapes
+input_shapes = {el.name: el.shape for el in ONNX_SESSION.get_inputs()}
+msg = f"Model input(s) {input_shapes}"
+logging.info(msg)
+print("INFO " + msg)
 
 ENTRYPOINT_INFERENCE = "/inference"
 
