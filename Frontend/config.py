@@ -49,6 +49,7 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         transmission_type=config["CAMERA_TRANSMISSION_TYPE"],
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
         destination_port=config["CAMERA_DESTINATION_PORT"],
+        image_extension=config["CAMERA_IMAGE_EXTENSION"],
         # debugging
         emulate_camera=config["CAMERA_EMULATE_CAMERA"] if config["CAMERA_EMULATE_CAMERA"] else False
     )

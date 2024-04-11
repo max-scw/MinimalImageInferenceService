@@ -15,6 +15,7 @@ timeout=""
 transmission_type=""
 destination_ip_address=""
 destination_port=""
+image_extension=".bmp"
 # debugging
 emulate_camera=false
 

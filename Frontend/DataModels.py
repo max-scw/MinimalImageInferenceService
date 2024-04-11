@@ -34,4 +34,6 @@ class CameraInfo(BaseModel):
     destination_ip_address: Optional[str] = None
     destination_port: Optional[int] = None
 
+    image_extension: Optional[str] = None
+
     emulate_camera: bool = False

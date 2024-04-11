@@ -93,7 +93,7 @@ def main():
             result = request_model_inference(
                 address=model_info.url,
                 image_raw=img_raw,
-                extension=".bmp"
+                extension=camera_info.image_extension
             )
             msg = f"main(): {result} = request_model_inference(...)"
             logging.info(msg)
