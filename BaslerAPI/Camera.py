@@ -348,10 +348,14 @@ class BaslerPylonCameraWrapper2(BaslerPylonCameraWrapper):
     def create_camera(self, **kwargs) -> bool:
         super().create_camera(**kwargs)
         # open camera session
-        self.camera.Open()
-        return True
+        if self.camera is not None and not self.__emulate_camera:
+            self.camera.Open()
+            return True
+        else:
+            return False
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.camera.Close()
+        if self.camera is not None and not self.__emulate_camera:
+            self.camera.Close()
 
 
