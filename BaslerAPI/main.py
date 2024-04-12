@@ -12,7 +12,9 @@ import logging
 
 from typing import List
 
-from Camera import BaslerPylonCameraWrapper
+# from Camera import BaslerPylonCameraWrapper
+from Camera import BaslerPylonCameraWrapper2 as BaslerPylonCameraWrapper
+
 from utils import get_env_variable
 
 # TODO: add config by environment variables

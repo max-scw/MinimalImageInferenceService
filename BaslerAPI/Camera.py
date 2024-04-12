@@ -4,6 +4,8 @@ import numpy as np
 import os
 from pathlib import Path
 import uuid
+import logging
+from timeit import default_timer
 
 from typing import Union
 import contextlib
@@ -87,6 +89,7 @@ class BaslerPylonCameraWrapper:
             else:
                 msg = "(): " + info
             print(f"BaslerPylonCameraWrapper.{method}" + msg)
+            logging.debug(msg)
 
     def set_timeout(self, timeout_milliseconds: int = None) -> bool:
         # verbose: print input
@@ -275,6 +278,10 @@ class BaslerPylonCameraWrapper:
         if timeout:
             self.set_timeout(timeout_milliseconds=timeout)
 
+        return self._grab_image(exposure_time_microseconds)
+
+    def _grab_image(self, exposure_time_microseconds: int) -> Union[np.ndarray, None]:
+        t0 = default_timer()
         # open camara session
         with open_camera(self.camera) as cam:
             # set exposure time
@@ -283,11 +290,11 @@ class BaslerPylonCameraWrapper:
             # set stream parameters
             self.__set_streaming_parameters(cam)
             # grab image
-            self._print(f"cam.GrabOne({self.timeout})", "grab_image")
             frame = cam.GrabOne(self.timeout)
             # convert if necessary
-            self._print(f"_get_image(frame)", "grab_image")
             img = self._get_image(frame)
+        t1 = default_timer()
+        self._print(f"Execution took {t1 - t0:.5} seconds.", "_grab_image")
         return img
 
     def save_image(
@@ -330,3 +337,21 @@ class BaslerPylonCameraWrapper:
     def get_device_name(self) -> str:
         cam_info = self._get_device_info()
         return cam_info.GetFullName()
+
+
+class BaslerPylonCameraWrapper2(BaslerPylonCameraWrapper):
+
+    # def __enter__(self):
+    #     # open camara session
+    #     self.camera.Open()
+
+    def create_camera(self, **kwargs) -> bool:
+        super().create_camera(**kwargs)
+        # open camera session
+        self.camera.Open()
+        return True
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.camera.Close()
+
+
