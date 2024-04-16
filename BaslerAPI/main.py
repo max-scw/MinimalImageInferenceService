@@ -19,7 +19,6 @@ from Camera import BaslerPylonCameraWrapper2 as BaslerPylonCameraWrapper
 from utils import get_env_variable
 
 
-
 ENTRYPOINT_TEST = "/test"
 ENTRYPOINT_TEST_BASLER = ENTRYPOINT_TEST + "/basler"
 ENTRYPOINT_TEST_IMAGE = ENTRYPOINT_TEST + "/image"
@@ -270,11 +269,11 @@ def return_test_image(
         for p2img in images:
             if p2img.is_file():
                 return FileResponse(
-                    image_path.as_posix(),
-                    media_type=f"image/{image_path.suffix.strip('.')}",
+                    p2img.as_posix(),
+                    media_type=f"image/{p2img.suffix.strip('.')}",
                     background=BackgroundTask(limit_temp_files)
                 )
-    # else return None
+    # return None otherwise
     return None
 
 
