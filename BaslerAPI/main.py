@@ -6,6 +6,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from starlette.background import BackgroundTask
 from pathlib import Path
+from random import shuffle
 
 from pypylon import pylon
 import logging
@@ -17,7 +18,6 @@ from Camera import BaslerPylonCameraWrapper2 as BaslerPylonCameraWrapper
 
 from utils import get_env_variable
 
-# TODO: add config by environment variables
 
 
 ENTRYPOINT_TEST = "/test"
@@ -257,19 +257,25 @@ def return_test_image(
         timeout: int = None,
         transmission_type: str = None,
         destination_ip_address: str = None,
-        destination_port: int = None
+        destination_port: int = None,
 ):
     # load file
-    image_path = get_env_variable("TEST_IMAGE", "240222_131544_0000000028_CAM1_NORMAL_OK.bmp")  # FIXME: default test image
-    if image_path and Path(image_path).is_file():
+    image_path = get_env_variable("TEST_IMAGE", None)
+    if image_path:
         image_path = Path(image_path)
-        return FileResponse(
-            image_path.as_posix(),
-            media_type=f"image/{image_path.suffix.strip('.')}",
-            background=BackgroundTask(limit_temp_files)
-        )
-    else:
-        return None
+        images = list(image_path.parent.glob(image_path.name))
+        # shuffle list
+        shuffle(images)
+        # return first image that exists
+        for p2img in images:
+            if p2img.is_file():
+                return FileResponse(
+                    image_path.as_posix(),
+                    media_type=f"image/{image_path.suffix.strip('.')}",
+                    background=BackgroundTask(limit_temp_files)
+                )
+    # else return None
+    return None
 
 
 if __name__ == "__main__":
