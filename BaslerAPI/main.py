@@ -14,8 +14,9 @@ import logging
 
 from typing import List
 
-# from Camera import BaslerPylonCameraWrapper
-from Camera import BaslerPylonCameraWrapper2 as BaslerPylonCameraWrapper
+from Camera import BaslerPylonCameraWrapper
+# from Camera import BaslerPylonCameraWrapper2 as BaslerPylonCameraWrapper
+from SimpleCamera import BaslerCamera
 
 from utils import get_env_variable
 
@@ -99,7 +100,7 @@ async def home():
 # ----- Interact with the Basler camera
 # create global camera instance
 CAMERA = BaslerPylonCameraWrapper(verbose=True)
-
+CAMERA2 = None
 
 @app.get(ENTRYPOINT_TAKE_PHOTO)
 def take_photo(
@@ -130,6 +131,64 @@ def take_photo(
     CAMERA.set_settings(**kwargs)
     t0 = default_timer()
     image_path = CAMERA.save_image(
+        Path(PATH_TO_TEMPORARY_FILES),
+        file_extension=".webp",
+        exposure_time_microseconds=exposure_time_microseconds
+    )
+    # except ValueError as ve:
+    #     raise HTTPException(status_code=449, detail=ve.args)
+    dt = default_timer() - t0
+    msg = f"Taking a photo took {dt} seconds. take_photo({elements})"
+    logging.debug(msg)
+    print(msg)
+
+    return FileResponse(
+        image_path.as_posix(),
+        media_type='image/webp',
+        background=BackgroundTask(limit_temp_files)
+    )
+
+
+@app.get(ENTRYPOINT_TAKE_PHOTO + "2")
+def take_photo2(
+        exposure_time_microseconds: int = None,
+        serial_number: int = None,
+        ip_address: str = None,
+        emulate_camera: bool = False,
+        timeout: int = None,
+        transmission_type: str = None,
+        destination_ip_address: str = None,
+        destination_port: int = None
+):
+    port_max = 65535
+    if destination_port and 1 < destination_port > port_max:
+        raise ValueError(f"Destination port must be smaller than {port_max} but was destination_port={destination_port}")
+    kwargs = {
+        "serial_number": serial_number,
+        "ip_address": ip_address,
+        # "emulate_camera": emulate_camera,
+        "timeout": timeout,
+        "transmission_type": transmission_type,
+        "destination_ip": destination_ip_address,
+        "destination_port": destination_port
+    }
+    elements = {ky: val for ky, val in kwargs.items() if val}
+
+    # try:
+    global CAMERA2
+    if (
+            (CAMERA2 is None)
+            or
+            (isinstance(CAMERA2, BaslerCamera) and any([val != getattr(CAMERA2, ky) for ky, val in kwargs.items()]))
+    ):
+        # create new instance
+        CAMERA2 = BaslerCamera(**kwargs)
+        # Connect to the camera
+        CAMERA2.connect()
+
+    t0 = default_timer()
+
+    image_path = CAMERA2.save_image(
         Path(PATH_TO_TEMPORARY_FILES),
         file_extension=".webp",
         exposure_time_microseconds=exposure_time_microseconds
