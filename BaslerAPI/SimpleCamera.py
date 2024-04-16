@@ -8,60 +8,11 @@ import logging
 from timeit import default_timer
 
 from typing import Union
-import contextlib
+
+from Camera import get_camera_by_ip_address, get_camera_by_serial_number
 
 
-def get_camera_by_ip_address(ip_address: str) -> pylon.InstantCamera:
-    # create a factory
-    factory = pylon.TlFactory.GetInstance()
-    # Create the transport layer
-    ptl = factory.CreateTl("BaslerGigE")
-    # Create an empty GigE device info object
-    empty_camera_info = ptl.CreateDeviceInfo()
-    # Set the IP address of the (empty) device object
-    empty_camera_info.SetIpAddress(ip_address)
-    #  Create the camera device object
-    camera_device = factory.CreateDevice(empty_camera_info)
-    # access / build the camera
-    cam = pylon.InstantCamera(camera_device)
-    cam_info = cam.GetDeviceInfo()
-    print(
-        f"Name: {cam_info.GetModelName()}",
-        f"IP: {cam_info.GetIpAddress()}",
-        f"Mac: {cam_info.GetMacAddress()}"
-    )
-    return cam
-
-
-def get_camera_by_serial_number(serial_number: int = 24339728):
-    # Pypylon get camera by serial number
-    info = None
-    for dev in pylon.TlFactory.GetInstance().EnumerateDevices():
-        if dev.GetSerialNumber() == str(serial_number):
-            info = dev
-            break
-
-    if info is None:
-        msg = f"No connection to camera could be established. No camera with serial number {serial_number} found."
-        n_digits = len(str(serial_number))
-        if n_digits != 8:
-            msg += f" Serial numbers for Basler cameras usually have 8 digits. The input had {n_digits} digits."
-        raise ValueError(msg)
-    return info
-
-
-@contextlib.contextmanager
-def open_camera(pypycam: pylon.InstantCamera) -> pylon.InstantCamera:
-    try:
-        pypycam.Open()
-        yield pypycam
-    except:
-        raise
-    finally:
-        pypycam.Close()
-
-
-class BaslerPylonCameraWrapper:
+class SimpleCameraWrapper:
     camera = None
     camera_parameter = None
     converter = None
@@ -81,6 +32,15 @@ class BaslerPylonCameraWrapper:
         self.verbose = verbose
         self.set_timeout(timeout_milliseconds)
         self.set_settings(**kwargs)
+
+    def _open_camera(self) -> bool:
+        if not self._emulate_camera and (self.camera is not None) and (not self.camera.isOpen()):
+            self.camera.Open()
+        return True
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.camera is not None and not self._emulate_camera:
+            self.camera.Close()
 
     def _print(self, info: Union[str, dict], method: str):
         if self.verbose:
@@ -223,8 +183,8 @@ class BaslerPylonCameraWrapper:
         if (self.camera is None) and (self._transmission_type or self._destination_ip or self._destination_port):
             raise ValueError("Camera not yet created!")
         elif self._transmission_type or self._destination_ip or self._destination_port:
-            with open_camera(self.camera) as cam:
-                self.__set_streaming_parameters(cam)
+            self._open_camera()
+            self.__set_streaming_parameters(self.camera)
         return True
 
     def __set_streaming_parameters(self, cam: pylon.InstantCamera) -> bool:
@@ -283,16 +243,17 @@ class BaslerPylonCameraWrapper:
     def _grab_image(self, exposure_time_microseconds: int) -> Union[np.ndarray, None]:
         t0 = default_timer()
         # open camara session
-        with open_camera(self.camera) as cam:
-            # set exposure time
-            if exposure_time_microseconds:
-                cam.ExposureTimeAbs.SetValue(exposure_time_microseconds)
-            # set stream parameters
-            self.__set_streaming_parameters(cam)
-            # grab image
-            frame = cam.GrabOne(self.timeout)
-            # convert if necessary
-            img = self._get_image(frame)
+        self._open_camera()
+        cam = self.camera
+        # set exposure time
+        if exposure_time_microseconds:
+            cam.ExposureTimeAbs.SetValue(exposure_time_microseconds)
+        # set stream parameters
+        self.__set_streaming_parameters(cam)
+        # grab image
+        frame = cam.GrabOne(self.timeout)
+        # convert if necessary
+        img = self._get_image(frame)
         t1 = default_timer()
         self._print(f"Execution took {t1 - t0:.5} seconds.", "_grab_image")
         return img
@@ -320,9 +281,8 @@ class BaslerPylonCameraWrapper:
         return filename
 
     def _get_device_info(self):
-        with open_camera(self.camera) as cam:
-            cam_info = cam.GetDeviceInfo()
-        return cam_info
+        self._open_camera()
+        return self.camera.GetDeviceInfo()
 
     def get_device_info(self) -> dict:
         cam_info = self._get_device_info()
@@ -337,33 +297,3 @@ class BaslerPylonCameraWrapper:
     def get_device_name(self) -> str:
         cam_info = self._get_device_info()
         return cam_info.GetFullName()
-
-
-class BaslerPylonCameraWrapper2(BaslerPylonCameraWrapper):
-
-    # def __enter__(self):
-    #     # open camara session
-    #     self.camera.Open()
-
-    def _open_camera(self) -> bool:
-        if not self._emulate_camera and (self.camera is not None) and (not self.camera.isOpen()):
-            self.camera.Open()
-        return True
-
-    def create_camera(self, **kwargs) -> bool:
-        super().create_camera(**kwargs)
-        # open camera session
-        if self.camera is not None and not self._emulate_camera:
-            self.camera.Open()
-            return True
-        else:
-            return False
-    def grab_image(self, **kwargs):
-        self._open_camera()
-        return super().grab_image(**kwargs)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.camera is not None and not self._emulate_camera:
-            self.camera.Close()
-
-

@@ -9,6 +9,7 @@ from pathlib import Path
 from random import shuffle
 
 from pypylon import pylon
+from timeit import default_timer
 import logging
 
 from typing import List
@@ -124,9 +125,10 @@ def take_photo(
         "destination_port": destination_port
     }
     elements = {ky: val for ky, val in kwargs.items() if val}
-    logging.debug(f"take_photo({elements})")
     # try:
+    global CAMERA
     CAMERA.set_settings(**kwargs)
+    t0 = default_timer()
     image_path = CAMERA.save_image(
         Path(PATH_TO_TEMPORARY_FILES),
         file_extension=".webp",
@@ -134,8 +136,10 @@ def take_photo(
     )
     # except ValueError as ve:
     #     raise HTTPException(status_code=449, detail=ve.args)
-
-    logging.debug(f"Photo temporary saved to {image_path.as_posix()}.")
+    dt = default_timer() - t0
+    msg = f"Taking a photo took {dt} seconds. take_photo({elements})"
+    logging.debug(msg)
+    print(msg)
 
     return FileResponse(
         image_path.as_posix(),
