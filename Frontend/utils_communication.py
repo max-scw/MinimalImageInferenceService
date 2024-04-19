@@ -1,5 +1,7 @@
 import requests
 import urllib.parse
+from timeit import default_timer
+
 
 from typing import Union, Dict, List
 import logging
@@ -15,9 +17,7 @@ def trigger_camera(camera_info: CameraInfo) -> Union[bytes, None]:
     :return:
     """
     url = build_url(camera_info)
-    msg = f"trigger_camera(): url={url}"
-    logging.debug(msg)
-    print("DEBUG: " + msg)
+    logging.debug(f"trigger_camera(): url={url}")
 
     return request_camera(url)
 
@@ -55,12 +55,16 @@ def build_url(camera_info: CameraInfo) -> str:
 
 
 def request_camera(address: str) -> Union[bytes, None]:
-    msg = f"Requesting camera {address}"
-    logging.debug(msg)
-    print("DEBUG request_camera(): " + msg)
-    r = requests.get(url=address)
 
-    status_code = r.status_code
+    t0 = default_timer()
+    response = requests.get(url=address)
+    status_code = response.status_code
+
+    logging.info(
+        f"Requesting camera {address} took {(default_timer() - t0) / 1000:.2} ms. "
+        f"(Status code: {status_code})"
+    )
+
     # status codes
     # 1xx: Informational – Communicates transfer protocol-level information.
     # 2xx: Success – Indicates that the client’s request was accepted successfully.
@@ -70,7 +74,7 @@ def request_camera(address: str) -> Union[bytes, None]:
     content = None
     if 200 <= status_code < 300:
         # output buffer
-        content = r.content
+        content = response.content
     elif 400 <= status_code < 600:
         # error
         raise Exception(f"Server returned status code {status_code} with message {r.text}")
@@ -82,22 +86,26 @@ def request_model_inference(
         image_raw: bytes,
         extension: str
 ) -> Dict[str, Union[List[int], List[float], List[List[float]]]]:
-    msg = f"request_model_inference({address}, image={len(image_raw)}, extension={extension})"
-    logging.debug(msg)
-    print("DEBUG request_model_inference(): " + msg)
+
+    logging.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
 
     # Send the POST request with the image
     ext = extension.strip(".")
     content = {"file": (f"image.{ext}", image_raw, f"image/{ext}")}
 
+    t0 = default_timer()
     response = requests.post(address, files=content)
+    status_code = response.status_code
 
-    msg = f"request_model_inference(): {response}"
-    logging.info(msg)
-    print("INFO request_model_inference(): " + msg)
+    logging.info(
+        f"Requesting model inference {address} took {(default_timer() - t0) / 1000:.2} ms. "
+        f"(Status code: {status_code})"
+    )
+
+    logging.debug(f"request_model_inference(): {response}")
 
     # Check the response
-    if response.status_code == 200:
+    if status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Inference returned status code {response.status_code} with message {response.text}")
+        raise Exception(f"Inference returned status code {status_code} with message {response.text}")

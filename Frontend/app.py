@@ -35,8 +35,8 @@ def main():
         page_icon=":camera:"
     )  #:rocket: # must be called as the first Streamlit command in your script.
 
+    # load configs
     model_info, camera_info, app_settings = get_config()
-
 
     # initialize session state
     if "image" not in st.session_state:
@@ -46,7 +46,7 @@ def main():
     if "buttons_disabled" not in st.session_state:
         st.session_state.buttons_disabled = True
 
-
+    # content
     if app_settings.title:
         st.title(app_settings.title)
     if app_settings.description:
@@ -95,8 +95,7 @@ def main():
 
         with st.spinner("analyzing model ..."):
             msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
-            logging.info(msg)
-            print("INFO " + msg)
+            logging.debug(msg)
 
             result = request_model_inference(
                 address=model_info.url,
@@ -104,8 +103,7 @@ def main():
                 extension=camera_info.image_extension
             )
             msg = f"main(): {result} = request_model_inference(...)"
-            logging.info(msg)
-            print("INFO " + msg)
+            logging.debug(msg)
 
             if isinstance(result, dict):
                 bboxes = result["bboxes"]
