@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
-#      - MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
+#      - MODEL_FILENAME=yolov7-tiny.onnx
       - MODEL_IMAGE_SIZE=(544, 640)
       - MODEL_PRECISION=fp32
 #      - MODEL_PRECISION=fp16
@@ -77,6 +77,8 @@ services:
       - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
       # general configs
       - TI_GENERAL_IMAGE_SIZE=(272, 320)
+      # streamlit
+      - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
     volumes:
       # mount folder to save images to
       - ./data/:/home/app/data/:rw

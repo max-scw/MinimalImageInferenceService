@@ -1,5 +1,6 @@
 [model]
-filename="yolov7-tiny.onnx"
+#filename="yolov7-tiny.onnx"
+filename="model.onnx"
 folder_data="./models/"
 image_size=[544, 640]
 precision="fp32"
