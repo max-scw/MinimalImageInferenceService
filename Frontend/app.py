@@ -8,7 +8,7 @@ from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
 from utils_image import save_image, bytes_to_image, resize_image
 from utils_coordinates import check_boxes
-from config import get_config_from_environment_variables
+from config import get_config_from_environment_variables, get_page_title
 from plot_pil import plot_bboxs
 
 
@@ -30,9 +30,13 @@ def reset_session_state_image():
 
 
 def main():
-    # st.set_page_config(page_title=app_settings.impress.project_name, page_icon=":camera:")  #:rocket: # must be
+    st.set_page_config(
+        page_title=get_page_title(),
+        page_icon=":camera:"
+    )  #:rocket: # must be called as the first Streamlit command in your script.
 
     model_info, camera_info, app_settings = get_config()
+
 
     # initialize session state
     if "image" not in st.session_state:
@@ -40,11 +44,8 @@ def main():
     if "show_bboxs" not in st.session_state:
         st.session_state.show_bboxs = True
     if "buttons_disabled" not in st.session_state:
-        logging.debug(f"Initializing session sate: buttons_disabled=True")
         st.session_state.buttons_disabled = True
-        st.session_state.key = 'value2'  # Attribute API
-    logging.debug(f"Session state: {st.session_state} (type {type(st.session_state)})")
-    logging.debug(f'{"buttons_disabled" not in st.session_state}, {len(st.session_state)}')
+
 
     if app_settings.title:
         st.title(app_settings.title)

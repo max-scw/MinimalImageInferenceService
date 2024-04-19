@@ -4,7 +4,7 @@ from datetime import datetime
 from ast import literal_eval
 import logging
 
-from utils import get_config
+from utils import get_config, get_env_variable
 from utils_streamlit import ImpressInfo
 from utils_coordinates import load_yaml
 
@@ -23,10 +23,8 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
 
 
 def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppSettings]:
-    config = get_config("TI")
-    msg = f"get_config_from_environment_variables(): config={config}"
-    logging.info(msg)
-    print(msg)
+    config = get_config(default_prefix="TI")
+    logging.info(f"App configuration: {config}")
 
     # impress
     impress = ImpressInfo(
@@ -111,6 +109,14 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
     )
 
     return model_info, camera_info, app_settings
+
+
+def get_page_title(default_prefix: str = "") -> Union[str, None]:
+    prefix = get_env_variable("PREFIX", default_prefix)
+    key = "IMPRESS_PROJECT_NAME"
+    if prefix:
+        key = f"{prefix}_{key}"
+    return get_env_variable(key, None)
 
 
 if __name__ == "__main__":
