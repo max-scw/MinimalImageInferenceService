@@ -1,9 +1,16 @@
 from pathlib import Path
 import tomllib
 
+import logging
+import sys
+
 from typing import Union
 
-from utils import get_environment_variables, get_env_variable
+from utils import (
+    get_environment_variables,
+    get_env_variable,
+    cast_logging_level
+)
 
 
 def load_default_config(path_to_config: Union[str, Path]) -> dict:
@@ -34,4 +41,14 @@ def get_config(default_prefix: str) -> dict:
 
     # merge configs
     config = config_default | config_environment_vars
+
+    # set logging
+    logging.basicConfig(
+        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", None)),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            # logging.FileHandler(Path(get_env_variable("LOGFILE", "log")).with_suffix(".log")),
+            logging.StreamHandler(sys.stdout)
+        ],
+    )
     return config

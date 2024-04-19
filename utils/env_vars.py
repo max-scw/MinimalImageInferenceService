@@ -1,6 +1,7 @@
 import os
 import re
 from ast import literal_eval
+import logging
 
 from typing import List, Dict, Any, Union
 
@@ -51,3 +52,30 @@ def cast(var: str) -> Union[None, int, float, str, bool]:
         # strip enclosing high comma
         var = var.strip('"').strip('"')
     return var
+
+
+def cast_logging_level(var: str, default: int = logging.INFO) -> int:
+    """Only casts logging levels"""
+    # cast string if possible
+    if isinstance(var, str):
+        var = cast(var)
+
+    options = {
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "warn": logging.WARN,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL,
+        "fatal": logging.FATAL
+    }
+    if isinstance(var, int):
+        if var not in options.values():
+            return default
+
+    elif isinstance(var, str):
+        for ky, val in options.items():
+            if var.lower() == ky:
+                return val
+    else:
+        return default

@@ -1,7 +1,9 @@
 import streamlit as st
 import logging
 import numpy as np
+import sys
 
+# custom packages
 from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
 from utils_image import save_image, bytes_to_image, resize_image
@@ -32,12 +34,17 @@ def main():
 
     model_info, camera_info, app_settings = get_config()
 
+    # initialize session state
     if "image" not in st.session_state:
         reset_session_state_image()
     if "show_bboxs" not in st.session_state:
         st.session_state.show_bboxs = True
     if "buttons_disabled" not in st.session_state:
+        logging.debug(f"Initializing session sate: buttons_disabled=True")
         st.session_state.buttons_disabled = True
+        st.session_state.key = 'value2'  # Attribute API
+    logging.debug(f"Session state: {st.session_state} (type {type(st.session_state)})")
+    logging.debug(f'{"buttons_disabled" not in st.session_state}, {len(st.session_state)}')
 
     if app_settings.title:
         st.title(app_settings.title)
@@ -59,7 +66,7 @@ def main():
     with columns[1]:
         toggle_boxes = st.toggle(
             "show boxes",
-            value=True,
+            value=camera_triggered,
             help="Toggles bounding-boxes.",
             disabled=st.session_state.buttons_disabled
         )
@@ -162,6 +169,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # set logging to DEBUG when called as default entry point
+    logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler(sys.stdout)])
+
     main()
 
     # streamlit run app.py

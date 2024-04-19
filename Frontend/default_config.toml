@@ -6,7 +6,7 @@ additional_info=""
 project_link=""
 
 [camera]
-url="http://basler-api:5050/test/image"
+url="http://localhost:5051/test/image"
 exposure_time_microseconds=10000
 # camera address
 serial_number=""
@@ -20,7 +20,7 @@ image_extension=".bmp"
 emulate_camera=false
 
 [model]
-url="http://backend-onnx:5050/inference"
+url="http://localhost:5052/inference"
 folder_head="/home/app/"
 folder_data="data/"
 class_map=""
@@ -29,4 +29,5 @@ color_map=""
 [general]
 file_type_save_image=".webp"
 #file_box_pattern="../data/desired_coordinates.yml"
-#image_size=
+#image_size=[640,544]
+#image_size=[640,544]
