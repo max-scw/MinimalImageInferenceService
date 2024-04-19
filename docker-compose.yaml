@@ -3,23 +3,23 @@ version: '3'
 services:
    # ----- toy inference
   basler-camera-service:
-    container_name: basler-api
+    container_name: camera-adapter
     build:
-      context: ./
-      dockerfile: BaslerAPI.Dockerfile
-    image: schwmax/basler-api
+      context: ../BaslerCameraAdapter
+      dockerfile: BaslerCameraAdapter.Dockerfile
+    image: maxscw/basler-camera-adapter
     restart: unless-stopped
-#    restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       # customize
-      - TEST_IMAGE=/home/app/testimages/*.bmp
+      - LOGGING_LEVEL=DEBUG
+      - TEST_IMAGE_PATH=/home/app/testimages/  #*.bmp
     volumes:
       - ./testimages:/home/app/testimages
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
-      - 5005:5050  # external access port | only for debugging
+      - 5005:5050  # external access port | for debugging
 
   inference-backend:
     container_name: backend-onnx
@@ -31,14 +31,12 @@ services:
     environment:
       - TZ=Europe/Berlin
 #      - MODEL_FILENAME=20240306_VIAB1-2_YOLOv7tiny.onnx
-#      - MODEL_IMAGE_SIZE=(544, 640)
       - MODEL_IMAGE_SIZE=(544, 640)
       - MODEL_PRECISION=fp32
 #      - MODEL_PRECISION=fp16
     volumes:
       - ./models/yolov7-tiny.onnx:/home/app/data/model.onnx:ro
-#      - ./models/20240306_VIAB1-2_YOLOv7tiny.onnx:/home/app/data/model.onnx:ro
-#      - ./models/20240306_VIAB1-2_YOLOv7tiny.onnx_fp16:/home/app/data/model.onnx
+#      - ./models/yolov7-tiny.onnx_fp16:/home/app/data/model.onnx
 #    ports:
 #      - 5007:5050  # external access port | only for debugging
 
@@ -61,8 +59,8 @@ services:
       - TI_MODEL_COLOR_MAP=colors.txt
 #      - TI_MODEL_IMAGE_SIZE=(544, 640)
       # camera
-#      - TI_CAMERA_URL=http://basler-api:5050/test/image
-      - TI_CAMERA_URL=http://basler-api:5050/basler/take-photo
+#      - TI_CAMERA_URL=http://camera-adapter:5050/test/image
+      - TI_CAMERA_URL=http://camera-adapter:5050/basler/take-photo
 #      - TI_CAMERA_SERIAL_NUMBER=24339728
       - TI_CAMERA_IP_ADDRESS=192.168.10.5
 #      - TI_CAMERA_TIMEOUT
