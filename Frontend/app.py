@@ -8,6 +8,7 @@ from utils_streamlit import write_impress
 from utils_communication import trigger_camera, request_model_inference
 from utils_image import save_image, bytes_to_image, resize_image
 from utils_coordinates import check_boxes
+from utils import get_env_variable, cast_logging_level
 from config import get_config_from_environment_variables, get_page_title
 from plot_pil import plot_bboxs
 
@@ -20,6 +21,7 @@ def get_config():
 def reset_session_state_image():
     st.session_state["image"] = {
         "overruled": False,
+        "path_to_saved_image": None,
         "raw": None,
         "show": None,
         "bboxes": None,
@@ -135,7 +137,7 @@ def main():
                 bboxes_rel = np.array(bboxes) / (imgsz * 2)
 
                 pattern_name, lg = check_boxes(bboxes_rel.tolist(), class_ids, app_settings.bbox_pattern)
-                print(f"DEBUG main(): check_boxes(): {pattern_name}, {lg}")
+                logging.debug(f"check_boxes(): {pattern_name}, {lg}")
                 st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
                 st.session_state.image["pattern_name"] = pattern_name
                 st.session_state.image["pattern_lg"] = lg
@@ -146,21 +148,27 @@ def main():
         if app_settings.bbox_pattern is not None:
             st.warning("No pattern to check provided. Result could not be checked.", icon="⚠️")
         elif st.session_state.image["pattern_lg"] is not None:
-            st.error(
-                f"Not all objects were found. "
-                f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}.",
-                icon="🚨"
-            )
+            msg = f"Not all objects were found. "\
+                  f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}."
+            logging.warning(msg)
+            st.error(msg, icon="🚨")
 
     # show image
     img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["show"]
     if img2show is not None:
         st.image(img2show)
 
+    # save image
     if overrule_decision or (app_settings.save_all_images and camera_triggered):
-        save_image(st.session_state.image["raw"], app_settings.data_folder)
+        if st.session_state.image["path_to_saved_image"] is None:
+            path_to_img = save_image(st.session_state.image["raw"], app_settings.data_folder)
+            # keep filename in session state to prevent that the image is saved twice
+            st.session_state.image["path_to_saved_image"] = path_to_img
+
         # make sure that the image is not saved twice
-        st.session_state.image["overruled"] = True
+        if overrule_decision:
+            st.session_state.image["overruled"] = True
+            logging.info(f"Decision overruled for image {st.session_state.image['path_to_saved_image']}.")
 
     # impress
     if app_settings.impress:
@@ -168,8 +176,15 @@ def main():
 
 
 if __name__ == "__main__":
-    # set logging to DEBUG when called as default entry point
-    logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler(sys.stdout)])
+    # set logging level
+    logging.basicConfig(
+        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.DEBUG)),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            # logging.FileHandler(Path(get_env_variable("LOGFILE", "log")).with_suffix(".log")),
+            logging.StreamHandler(sys.stdout)
+        ],
+    )
 
     main()
 
