@@ -105,7 +105,8 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         description=config["GENERAL_DESCRIPTION"] if "GENERAL_DESCRIPTION" in config else None,
         file_type_save_image=config["GENERAL_FILE_TYPE_SAVE_IMAGE"],
         bbox_pattern=load_yaml(config["GENERAL_FILE_BOX_PATTERN"]) if "GENERAL_FILE_BOX_PATTERN" in config else None,
-        image_size=config["GENERAL_IMAGE_SIZE"] if "GENERAL_IMAGE_SIZE" in config else None
+        image_size=config["GENERAL_IMAGE_SIZE"] if "GENERAL_IMAGE_SIZE" in config else None,
+        save_all_images=config["GENERAL_SAVE_ALL_IMAGES"]
     )
 
     return model_info, camera_info, app_settings

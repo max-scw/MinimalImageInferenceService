@@ -30,3 +30,4 @@ color_map=""
 file_type_save_image=".webp"
 #file_box_pattern="../data/desired_coordinates.yml"
 #image_size=[640,544]
+save_all_images=false

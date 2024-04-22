@@ -157,7 +157,7 @@ def main():
     if img2show is not None:
         st.image(img2show)
 
-    if overrule_decision:
+    if overrule_decision or (app_settings.save_all_images and camera_triggered):
         save_image(st.session_state.image["raw"], app_settings.data_folder)
         # make sure that the image is not saved twice
         st.session_state.image["overruled"] = True
