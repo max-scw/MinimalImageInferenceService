@@ -43,7 +43,7 @@ RUN chown -R appuser:appuser /home/app
 
 # Define the health check using curl for both HTTP and HTTPS
 HEALTHCHECK --interval=30s --timeout=5s \
-  CMD (curl -fsk http://localhost:8501/_stcore/health) || (curl -fsk https://localhost:8501/_stcore/health) || exit 1#
+  CMD (curl -fsk http://localhost:8501/_stcore/health) || (curl -fsk https://localhost:8501/_stcore/health) || exit 1
 
 # Expose the ports
 EXPOSE 8501
