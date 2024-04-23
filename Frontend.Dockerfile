@@ -36,22 +36,21 @@ ADD utils_streamlit ./utils_streamlit/
 COPY Frontend/* ./
 
 
+
 # set to non-root user
 USER root
 RUN chown -R appuser:appuser /home/app
 #USER appuser
 
+# Expose the ports
+EXPOSE 8501
+
 # Define the health check using curl for both HTTP and HTTPS
 HEALTHCHECK --interval=30s --timeout=5s \
   CMD (curl -fsk http://localhost:8501/_stcore/health) || (curl -fsk https://localhost:8501/_stcore/health) || exit 1
 
-# Expose the ports
-EXPOSE 8501
-
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
-
 ## Start the app
-1# Copy the entrypoint script into the container
+# Copy the entrypoint script into the container
 COPY Frontend/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set execute permissions for the entrypoint script
