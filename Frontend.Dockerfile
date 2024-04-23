@@ -48,8 +48,10 @@ HEALTHCHECK --interval=30s --timeout=5s \
 # Expose the ports
 EXPOSE 8501
 
+HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+
 ## Start the app
-# Copy the entrypoint script into the container
+1# Copy the entrypoint script into the container
 COPY Frontend/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set execute permissions for the entrypoint script
