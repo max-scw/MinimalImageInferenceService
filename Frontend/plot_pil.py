@@ -51,14 +51,20 @@ def plot_bboxs(
         bbox: np.ndarray,
         scores: Union[List[float], np.ndarray],
         classes: Union[List[int], np.ndarray],
-        line_thickness: int = 2,
+        line_thickness: int = None,
         class_map: Dict[int, str] = None,
         color_map: Dict[int, Union[str, Tuple[int, int, int], np.ndarray]] = None
 ) -> Image.Image:
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image)
 
-    line_thickness = line_thickness or max(int(min(image.size) / 200), 2)
+    # default line thickness is relative to the image size
+    if line_thickness is None:
+        line_thickness = int(min(image.size) / 150)
+    # ensure minimal line thickness
+    line_thickness = max(line_thickness, 3)
+
+    # fontsize relative to image size
     fontsize = max(round(max(image.size) / 40), 12)
 
     # create draw object
