@@ -10,16 +10,14 @@ import logging
 from DataModels import CameraInfo
 
 
-def trigger_camera(camera_info: CameraInfo) -> Union[bytes, None]:
+def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes, None]:
     """
     wrapper
-    :param camera_info:
-    :return:
     """
     url = build_url(camera_info)
     logging.debug(f"trigger_camera(): url={url}")
 
-    return request_camera(url)
+    return request_camera(url, timeout)
 
 
 def build_url(camera_info: CameraInfo) -> str:
@@ -54,10 +52,10 @@ def build_url(camera_info: CameraInfo) -> str:
     return url
 
 
-def request_camera(address: str) -> Union[bytes, None]:
+def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
 
     t0 = default_timer()
-    response = requests.get(url=address)
+    response = requests.get(url=address, timeout=timeout)
     status_code = response.status_code
 
     logging.info(

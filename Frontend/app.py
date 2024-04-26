@@ -14,9 +14,58 @@ from utils import get_env_variable, cast_logging_level
 from config import get_config_from_environment_variables, get_page_title
 from plot_pil import plot_bboxs
 
+
 @st.cache_data
 def get_config():
     return get_config_from_environment_variables()
+
+
+@st.cache_data
+def set_css_config():
+    # Custom CSS to style the buttons
+    font_size = 32
+
+    # --- button
+    button_size = 100
+    button_padding = int((button_size - font_size) / 2)
+
+    # --- toggle switch
+    # toggle_ball_size = 42  # 12px
+    # toggle_padding = int(toggle_ball_size / 6)  # 2px
+    # toggle_background_border_radius = int(toggle_ball_size / 1.5)  # 8px = 0.5rem
+    # toggle_background_height = toggle_ball_size + 2 * toggle_padding  # 16px
+    # toggle_background_width = 2 * toggle_background_height  # 32px
+    # toggle_ball_translate = toggle_background_width - toggle_ball_size - 2 * toggle_padding  # 16px
+    # toggle_label_padding = int((toggle_background_height - font_size) / 2)  # 1px  # half font size
+
+    # --- checkbox
+    checkbox_size = 50
+    checkbox_background_radius = int(checkbox_size / 6)
+    checkbox_label_margin_top = int((checkbox_size / 2))
+    logging.debug("Loading CSS styles.")
+    st.markdown(f"""
+        <style>
+            p {{ font-size: {font_size}px; }}
+            button {{
+                min-height: {button_size}px !important;
+            }}
+            
+            /* checkbox */
+            [data-testid="stCheckbox"] label span {{
+                /* Styles the checkbox */
+                height: {checkbox_size}px;
+                width: {checkbox_size}px;
+                border-bottom-right-radius: {checkbox_background_radius}px;
+                border-bottom-left-radius: {checkbox_background_radius}px;
+                border-top-right-radius: {checkbox_background_radius}px;
+                border-top-left-radius: {checkbox_background_radius}px;
+            }}
+            [data-testid="stCheckbox"] span.strut {{width: {0}px;}}
+            [data-testid="stCheckbox"] p {{margin-top: {checkbox_label_margin_top}px;}}
+
+        </style>
+
+    """, unsafe_allow_html=True)
 
 
 def reset_session_state_image():
@@ -39,20 +88,7 @@ def main():
         layout="wide"
     )  #:rocket: # must be called as the first Streamlit command in your script.
 
-    # Custom CSS to style the buttons
-    st.markdown("""
-        <style>
-            button {
-                padding-top: 50px !important;
-                padding-bottom: 50px !important;
-            }
-            toggle {
-                padding-top: 50px !important;
-                padding-bottom: 50px !important;
-                width: 180px !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    set_css_config()
 
     # load configs
     model_info, camera_info, app_settings = get_config()
@@ -61,7 +97,7 @@ def main():
     if "image" not in st.session_state:
         reset_session_state_image()
     if "show_bboxs" not in st.session_state:
-        st.session_state.show_bboxs = True
+        st.session_state.show_bboxs = False
     if "buttons_disabled" not in st.session_state:
         st.session_state.buttons_disabled = True
 
@@ -76,7 +112,7 @@ def main():
 
     with columns[0]:
         camera_triggered = st.button(
-            r"$\textsf{\Large Trigger}$",
+            "Trigger",
             help="trigger camera and call model.",
             type="primary",
             use_container_width=True
@@ -85,18 +121,26 @@ def main():
             st.session_state.buttons_disabled = False
 
     with columns[2]:
-        toggle_boxes = st.toggle(
-            r"$\textsf{\Large show boxes}$",
+        kwargs = {
+            "label": "show boxes",
+            "help": "Toggles bounding-boxes.",
+            # "disabled": st.session_state.buttons_disabled,
+        }
+
+        # toggle_boxes = st.toggle(
+        #     **kwargs,
+        #     value=camera_triggered,
+        # )
+        toggle_boxes = st.checkbox(
+            **kwargs,
             value=camera_triggered,
-            help="Toggles bounding-boxes.",
-            disabled=st.session_state.buttons_disabled
         )
         if toggle_boxes:
             st.session_state.show_bboxs = not st.session_state.show_bboxs
 
     with columns[3]:
         overrule_decision = st.button(
-            r"$\textsf{\Large Overrule decision}$",
+            "Overrule decision",
             help="Flags the image as wrongly classified",
             type="secondary",
             disabled=st.session_state.buttons_disabled or st.session_state.image["overruled"],
@@ -107,7 +151,11 @@ def main():
     if camera_triggered:
         reset_session_state_image()
         with st.spinner("taking photo ..."):
-            img_raw = trigger_camera(camera_info)
+            try:
+                img_raw = trigger_camera(camera_info, timeout=50000)
+            except (TimeoutError, ConnectionError):
+                st.error("Camera not responding.", icon="🚨")
+                logging.error("TimeoutError: trigger_camera(...). Camera not responding.")
 
         # keep image in session state
         image = bytes_to_image(img_raw)
@@ -117,14 +165,16 @@ def main():
         with st.spinner("analyzing model ..."):
             msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
             logging.debug(msg)
-
-            result = request_model_inference(
-                address=model_info.url,
-                image_raw=img_raw,
-                extension=camera_info.image_extension
-            )
-            msg = f"main(): {result} = request_model_inference(...)"
-            logging.debug(msg)
+            try:
+                result = request_model_inference(
+                    address=model_info.url,
+                    image_raw=img_raw,
+                    extension=camera_info.image_extension
+                )
+                logging.debug(f"main(): {result} = request_model_inference(...)")
+            except (TimeoutError, ConnectionError):
+                st.error("Backend not responding.", icon="🚨")
+                logging.error("TimeoutError: request_model_inference(...). Backend not responding.")
 
             if isinstance(result, dict):
                 bboxes = result["bboxes"]
