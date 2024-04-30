@@ -2,6 +2,7 @@ import streamlit as st
 import logging
 import numpy as np
 import sys
+from datetime import datetime
 
 # from streamlit_extras.stateful_button import button
 
@@ -39,18 +40,41 @@ def set_css_config():
     # toggle_label_padding = int((toggle_background_height - font_size) / 2)  # 1px  # half font size
 
     # --- checkbox
-    checkbox_size = 50
+    checkbox_size = 55
     checkbox_background_radius = int(checkbox_size / 6)
     checkbox_label_margin_top = int((checkbox_size / 2))
     logging.debug("Loading CSS styles.")
     st.markdown(f"""
         <style>
-            p {{ font-size: {font_size}px; }}
             button {{
                 min-height: {button_size}px !important;
             }}
-            
+            [data-testid="baseButton-primary"] p {{
+                font-size: {font_size}px;
+            }}
+            [data-testid="baseButton-secondary"] p {{
+                font-size: {font_size}px;
+            }}
+
             /* checkbox */
+            [data-baseweb="checkbox"] [data-testid="stWidgetLabel"] p {{
+                /* Styles for the label text for checkbox and toggle */
+                font-size: {font_size}px !important;
+                width: 200px
+            }}
+
+            [data-baseweb="checkbox"] div {{
+                /* Styles for the slider container */
+                height: {checkbox_size + 2}px;
+                width: {4/3 * checkbox_size + 2}px;
+
+            }}
+            [data-baseweb="checkbox"] div div {{
+                /* Styles for the slider circle */
+                height: {checkbox_size}px;
+                width: {checkbox_size}px;
+            }}
+
             [data-testid="stCheckbox"] label span {{
                 /* Styles the checkbox */
                 height: {checkbox_size}px;
@@ -62,7 +86,7 @@ def set_css_config():
             }}
             [data-testid="stCheckbox"] span.strut {{width: {0}px;}}
             [data-testid="stCheckbox"] p {{margin-top: {checkbox_label_margin_top}px;}}
-
+            [data-testid="stNotification] p {{ font-size: 16px }}
         </style>
 
     """, unsafe_allow_html=True)
@@ -108,8 +132,7 @@ def main():
         st.write(app_settings.description)
 
     # ----- buttons
-    columns = st.columns([1, 1, 1, 1])
-
+    columns = st.columns([1, 3])
     with columns[0]:
         camera_triggered = st.button(
             "Trigger",
@@ -120,25 +143,25 @@ def main():
         if camera_triggered:
             st.session_state.buttons_disabled = False
 
-    with columns[2]:
+        for _ in range(10):
+            st.text("")
         kwargs = {
             "label": "show boxes",
-            "help": "Toggles bounding-boxes.",
-            # "disabled": st.session_state.buttons_disabled,
+            # "help": "Toggles bounding-boxes.",
+            "disabled": st.session_state.buttons_disabled,
         }
 
-        # toggle_boxes = st.toggle(
-        #     **kwargs,
-        #     value=camera_triggered,
-        # )
-        toggle_boxes = st.checkbox(
+        toggle_boxes = st.toggle(
             **kwargs,
             value=camera_triggered,
         )
+        # toggle_boxes = st.checkbox(
+        #     **kwargs,
+        #     value=camera_triggered,
+        # )
         if toggle_boxes:
             st.session_state.show_bboxs = not st.session_state.show_bboxs
 
-    with columns[3]:
         overrule_decision = st.button(
             "Overrule decision",
             help="Flags the image as wrongly classified",
@@ -147,85 +170,89 @@ def main():
             use_container_width=True
         )
 
-    # processing
-    if camera_triggered:
-        reset_session_state_image()
-        with st.spinner("taking photo ..."):
-            try:
-                img_raw = trigger_camera(camera_info, timeout=50000)
-            except (TimeoutError, ConnectionError):
-                st.error("Camera not responding.", icon="🚨")
-                logging.error("TimeoutError: trigger_camera(...). Camera not responding.")
+    with (columns[1]):
+        # processing
+        if camera_triggered:
+            reset_session_state_image()
+            with st.spinner("taking photo ..."):
+                try:
+                    img_raw = trigger_camera(camera_info, timeout=50000)
+                except (TimeoutError, ConnectionError):
+                    st.error("Camera not responding.", icon="🚨")
+                    logging.error("TimeoutError: trigger_camera(...). Camera not responding.")
 
-        # keep image in session state
-        image = bytes_to_image(img_raw)
-        st.session_state.image["raw"] = image
-        st.session_state.image["show"] = resize_image(image, app_settings.image_size)
+            # keep image in session state
+            image = bytes_to_image(img_raw)
+            st.session_state.image["raw"] = image
+            st.session_state.image["show"] = resize_image(image, app_settings.image_size)
 
-        with st.spinner("analyzing model ..."):
-            msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
+            with st.spinner("analyzing model ..."):
+                msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
+                logging.debug(msg)
+                try:
+                    result = request_model_inference(
+                        address=model_info.url,
+                        image_raw=img_raw,
+                        extension=camera_info.image_extension
+                    )
+                    logging.debug(f"main(): {result} = request_model_inference(...)")
+                except (TimeoutError, ConnectionError):
+                    st.error("Backend not responding.", icon="🚨")
+                    logging.error("TimeoutError: request_model_inference(...). Backend not responding.")
+                # st.success(f"Model inference successful. ({datetime.now().strftime('%H:%M:%S %d.%m.%Y')})")
+
+                if isinstance(result, dict):
+                    bboxes = result["bboxes"]
+                    class_ids = result["class_ids"]
+                    scores = result["scores"]
+                else:
+                    bboxes, class_ids, scores = [], [], []
+
+                if bboxes:
+                    img_draw = plot_bboxs(
+                        st.session_state.image["raw"].convert("RGB"),
+                        bboxes,
+                        scores,
+                        class_ids,
+                        class_map=model_info.class_map,
+                        color_map=model_info.color_map
+                    )
+                    st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
+                    st.session_state.show_bboxs = True
+                else:
+                    st.session_state.image["bboxes"] = st.session_state.image["show"]
+
+            with st.spinner("check bounding boxes ..."):
+                if bboxes and (app_settings.bbox_pattern is not None):
+                    # scale boxes to relative coordinates
+                    imgsz = img_draw.size
+                    bboxes_rel = np.array(bboxes) / (imgsz * 2)
+
+                    pattern_name, lg = check_boxes(bboxes_rel.tolist(), class_ids, app_settings.bbox_pattern)
+                    logging.debug(f"check_boxes(): {pattern_name}, {lg}")
+
+                    st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
+                    st.session_state.image["pattern_name"] = pattern_name
+                    st.session_state.image["pattern_lg"] = lg
+
+        # always show decision
+        if st.session_state.image["decision"]:
+            msg = f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}"
             logging.debug(msg)
-            try:
-                result = request_model_inference(
-                    address=model_info.url,
-                    image_raw=img_raw,
-                    extension=camera_info.image_extension
-                )
-                logging.debug(f"main(): {result} = request_model_inference(...)")
-            except (TimeoutError, ConnectionError):
-                st.error("Backend not responding.", icon="🚨")
-                logging.error("TimeoutError: request_model_inference(...). Backend not responding.")
-
-            if isinstance(result, dict):
-                bboxes = result["bboxes"]
-                class_ids = result["class_ids"]
-                scores = result["scores"]
+            st.success(msg, icon="✅")
+        elif st.session_state.image["show"] is not None:
+            if st.session_state.image["pattern_lg"] is not None:
+                msg = (f"Not all objects were found. "
+                       f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}.")
+                logging.warning(msg)
+                st.error(msg, icon="🚨")
             else:
-                bboxes, class_ids, scores = [], [], []
-
-        with st.spinner("draw bounding boxes ..."):
-
-            if bboxes:
-                img_draw = plot_bboxs(
-                    st.session_state.image["raw"].convert("RGB"),
-                    bboxes,
-                    scores,
-                    class_ids,
-                    class_map=model_info.class_map,
-                    color_map=model_info.color_map
-                )
-                st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
-                st.session_state.show_bboxs = True
-            else:
-                st.session_state.image["bboxes"] = st.session_state.image["show"]
-
-        with st.spinner("check bounding boxes ..."):
-            if bboxes and (app_settings.bbox_pattern is not None):
-                # scale boxes to relative coordinates
-                imgsz = img_draw.size
-                bboxes_rel = np.array(bboxes) / (imgsz * 2)
-
-                pattern_name, lg = check_boxes(bboxes_rel.tolist(), class_ids, app_settings.bbox_pattern)
-                logging.debug(f"check_boxes(): {pattern_name}, {lg}")
-                st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
-                st.session_state.image["pattern_name"] = pattern_name
-                st.session_state.image["pattern_lg"] = lg
-
-    if st.session_state.image["decision"]:
-        st.success(f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}", icon="✅")
-    else:
-        if app_settings.bbox_pattern is not None:
-            st.warning("No pattern to check provided. Result could not be checked.", icon="⚠️")
-        elif st.session_state.image["pattern_lg"] is not None:
-            msg = f"Not all objects were found. "\
-                  f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}."
-            logging.warning(msg)
-            st.error(msg, icon="🚨")
+                st.info("No pattern provided to check bounding-boxes.", icon="ℹ️")
 
     # show image
-    img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["show"]
-    if img2show is not None:
-        st.image(img2show)
+        img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["show"]
+        if img2show is not None:
+            st.image(img2show)
 
     # save image
     if overrule_decision or (app_settings.save_all_images and camera_triggered):

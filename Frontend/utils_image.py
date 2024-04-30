@@ -39,7 +39,6 @@ def resize_image(image: Image, size: Tuple[int, int] = None) -> Image:
         # PIL expect the size in the reverse order compared to torch
         size = size[::-1]
 
-    print(f"Resizing image to {size} (from {image.size})")
     image_ = image.copy()
     # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters-comparison-table for method comparison
     if size is not None:
