@@ -30,4 +30,5 @@ color_map=""
 file_type_save_image=".webp"
 #file_box_pattern="../data/desired_coordinates.yml"
 #image_size=[640,544]
-save_all_images=false
+#save_all_images=false
+min_model_score=0.1  # set to 1 to save all images

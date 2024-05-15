@@ -172,6 +172,7 @@ def main():
 
     with (columns[1]):
         # processing
+        scores = []
         if camera_triggered:
             reset_session_state_image()
             with st.spinner("taking photo ..."):
@@ -255,7 +256,7 @@ def main():
             st.image(img2show)
 
     # save image
-    if overrule_decision or (app_settings.save_all_images and camera_triggered):
+    if overrule_decision or (scores and (min(scores) < app_settings.min_model_score)):
         if st.session_state.image["path_to_saved_image"] is None:
             path_to_img = save_image(st.session_state.image["raw"], app_settings.data_folder)
             # keep filename in session state to prevent that the image is saved twice
@@ -285,5 +286,3 @@ if __name__ == "__main__":
     main()
 
     # streamlit run app.py
-# TODO: store files: all, only bad, every xth file
-# TODO: add endpoint to get stored files
