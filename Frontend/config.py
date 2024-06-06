@@ -42,6 +42,7 @@ def get_config_from_environment_variables() -> Tuple[ModelInfo, CameraInfo, AppS
         # camera addresses
         serial_number=config["CAMERA_SERIAL_NUMBER"],
         ip_address=config["CAMERA_IP_ADDRESS"],
+        subnet_mask=config["CAMERA_SUBNET_MASK"],
         # config
         timeout_ms=config["CAMERA_TIMEOUT"],
         transmission_type=config["CAMERA_TRANSMISSION_TYPE"],

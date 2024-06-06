@@ -11,6 +11,7 @@ exposure_time_microseconds=10000
 # camera address
 serial_number=""
 ip_address=""
+subnet_mask=""
 timeout=""
 transmission_type=""
 destination_ip_address=""

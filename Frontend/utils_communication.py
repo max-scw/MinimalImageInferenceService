@@ -30,6 +30,8 @@ def build_url(camera_info: CameraInfo) -> str:
         params["serial_number"] = camera_info.serial_number
     elif camera_info.ip_address is not None:
         params["ip_address"] = camera_info.ip_address
+        if camera_info.subnet_mask is not None:
+            params["subnet_mask"] = camera_info.subnet_mask
     else:
         params["emulate_camera"] = True
 

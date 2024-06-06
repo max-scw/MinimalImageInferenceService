@@ -29,6 +29,7 @@ class CameraInfo(BaseModel):
 
     serial_number: Optional[int] = None
     ip_address: Optional[str] = None
+    subnet_mask: Optional[str] = None
 
     timeout_ms: Optional[int] = None
     transmission_type: Optional[str] = None
