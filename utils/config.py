@@ -12,21 +12,6 @@ from utils import (
     cast_logging_level
 )
 
-
-def load_default_config(path_to_config: Union[str, Path]) -> dict:
-    with open(Path(path_to_config), "rb") as fid:
-        config_default = tomllib.load(fid)
-    config_default_env = dict()
-
-    for group in config_default:
-        for ky, vl in config_default[group].items():
-            # variable name
-            var_nm = "_".join([group, ky]).upper()
-            # nm = "_".join([prefix, var_nm]).upper()
-            config_default_env[var_nm] = vl if vl else None
-    return config_default_env
-
-
 def set_logging():
     log_file = get_env_variable("LOGFILE", None)
     logging.basicConfig(
@@ -37,6 +22,24 @@ def set_logging():
     )
 
 
+def load_default_config(path_to_config: Union[str, Path]) -> dict:
+    with open(Path(path_to_config), "rb") as fid:
+        config_default = tomllib.load(fid)
+
+    def flatten_dictionary(dictionary: dict, key: str = None) -> dict:
+        variables = dict()
+        for ky, vl in dictionary.items():
+            # variable name
+            var_nm = ((f"{key}_" if key else "") + f"{ky}").upper()
+            if isinstance(vl, dict):
+                variables |= flatten_dictionary(vl, var_nm)
+            else:
+                variables[var_nm] = vl
+        return variables
+
+    return flatten_dictionary(config_default)
+
+
 def get_config(default_prefix: str = "") -> dict:
     # --- load default config
     default_config = Path("./default_config.toml")
@@ -45,8 +48,16 @@ def get_config(default_prefix: str = "") -> dict:
     else:
         config_default = dict()
 
-    # get custom config
-    prefix = get_env_variable("PREFIX", default_prefix)
+    # prefix of the environment variables
+    prefix = default_prefix
+    if not default_prefix:
+        if "PREFIX" in config_default:
+            prefix = config_default["PREFIX"]
+        elif "GENERAL_PREFIX" in config_default:
+            prefix = config_default["GENERAL_PREFIX"]
+
+    # get overwrite default config with environment variables
+    prefix = get_env_variable("PREFIX", prefix)
     config_environment_vars = get_environment_variables(rf"{prefix}_" if prefix else "", False)
 
     # merge configs
