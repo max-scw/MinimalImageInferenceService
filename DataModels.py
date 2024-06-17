@@ -17,7 +17,7 @@ from typing import Optional, List, Dict, Tuple, Union, Literal
 
 
 # ----- Inference: NN-model
-class ModelInfo(BaseModel):
+class InferenceInfo(BaseModel):
     url: Union[str, Path]
     class_map: Optional[Dict[int, str]] = None
     color_map: Optional[Dict[int, str]] = None

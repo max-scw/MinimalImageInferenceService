@@ -1,74 +1,80 @@
-from fastapi_offline import FastAPIOffline as FastAPI
+# from fastapi_offline import FastAPIOffline as FastAPI
 from fastapi import File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import uvicorn
-from prometheus_fastapi_instrumentator import Instrumentator
 
-import requests
+# import requests
 from utils_communication import trigger_camera, request_model_inference
-from DataModels import CameraInfo
+from utils_fastapi import default_fastapi_setup
+from DataModels import CameraInfo, InferenceInfo
 
 
 import logging
 from timeit import default_timer
 
 # custom packages
-from utils import get_config, get_env_variable, cast_logging_level
+from utils import get_config
+from utils_data_models import build_camera_info
 
 
 # get config
-CONFIG = get_config(default_prefix="")
+CONFIG = get_config()
+CAMERA = build_camera_info(CONFIG)
 
 # entry points
 ENTRYPOINT = "/"
 
 # create fastAPI object
+title = "Backend"
 summary = "Minimalistic server providing a REST api to orchestrate a containerized computer vision application."
-app = FastAPI()
-
-# create endpoint for prometheus
-Instrumentator().instrument(app).expose(app)  # produces a False in the console every time a valid entrypoint is called
-
-
-# ----- home
-@app.get("/")
-async def home():
-    return {
-        "Description": summary
-    }
-
+app = default_fastapi_setup(title, summary)
 
 
 @app.post(ENTRYPOINT)
 async def main(
-
-        file: UploadFile = File(...)
+        camera: CameraInfo,
+        # inference: InferenceInfo,
+        # file: UploadFile = File(...)
 ):
     # TODO: update all data models with info sent with
 
-    image_bytes = await file.read()
-
-    # trigger camera
+    # ----- Camera
+    logging.debug(f"Request camera at {camera.url}")
     try:
-        img_raw = trigger_camera(camera_info, timeout=50000)
+        img_bytes = trigger_camera(camera, timeout=50000)
     except (TimeoutError, ConnectionError):
-        logging.error("TimeoutError: trigger_camera(...). Camera not responding.")
-        # TODO: HTTPS response with error code
+        msg = "TimeoutError: trigger_camera(...). Camera not responding."
+        logging.error(msg)
+        raise HTTPException(status_code=408, detail=msg)
+    except Exception as e:
+        msg = f"Fatal error at camera backend: {e}"
+        logging.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
-    msg = f"main(): request_model_inference({inference_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
-    logging.debug(msg)
+    # ----- Inference backend
+    logging.debug(f"Request model inference backend at {CONFIG['INFERENCE_URL']}")
     try:
         result = request_model_inference(
-            address=inference_info.url,
-            image_raw=image_bytes,
-            extension=camera_info.image_extension
+            address=CONFIG["INFERENCE_URL"],
+            image_raw=img_bytes,
+            extension=CAMERA.image_extension
         )
         logging.debug(f"main(): {result} = request_model_inference(...)")
     except (TimeoutError, ConnectionError):
-        logging.error("TimeoutError: request_model_inference(...). Backend not responding.")
+        msg = "TimeoutError: request_model_inference(...). Inference backend not responding."
+        logging.error(msg)
+        raise HTTPException(status_code=408, detail=msg)
+    except Exception as e:
+        msg = f"Fatal error at inference backend: {e}"
+        logging.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
+    # TODO: draw bounding-boxes on image?
 
+    # ----- Check bounding-box pattern
     # TODO: check bounding box pattern
+    logging.debug(f"Request pattern checker at {CONFIG['PATTERN_CHECKER_URL']}")
+    # TODO write wrapper for the request
     decision = None
     pattern_name = None
     if decision:
@@ -81,16 +87,17 @@ async def main(
     else:
         logging.info("No pattern provided to check bounding-boxes.")
 
-    # output
+    # ----- Return
     content = {
         "decision": True if decision else False,
-        "bboxes": None,
-        "classes": None,
-        "scores": None,
-        "image": img_raw,
+        **result,
     }
 
-    return JSONResponse(content=content)
+    return StreamingResponse(
+        img_bytes,
+        media_type="image/jpeg",
+        headers={"content": str(content)}
+    )
 
 
 if __name__ == "__main__":

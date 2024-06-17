@@ -17,8 +17,8 @@ from utils_image import scale_coordinates_to_image_size, prepare_image, image_fr
 
 
 # get config
-CONFIG = get_config(default_prefix="")
-logging.debug(f"CONFIG: {CONFIG}")
+CONFIG = get_config()
+
 # get model path from config
 model_path = Path(CONFIG["MODEL_FOLDER_DATA"]) / CONFIG["MODEL_FILENAME"]
 path_to_model_file = model_path.with_suffix(".onnx")
@@ -47,6 +47,7 @@ async def predict(
     if file.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
 
+    # wait for file transmission
     image_bytes = await file.read()
     image = image_from_bytes(image_bytes)
     # preprocess image
