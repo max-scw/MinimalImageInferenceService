@@ -160,3 +160,12 @@ cython_debug/
 .idea/
 .venv/
 /venv/
+# other foldersd
+/testimages/
+/data/
+/models/
+# share utils folder
+/Backend/utils/
+/Frontend/utils/
+/Inference/utils/
+/PatternCheck/utils

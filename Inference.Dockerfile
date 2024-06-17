@@ -29,7 +29,10 @@ COPY Inference/requirements.txt requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
+# 1. copy shated files
 ADD utils ./utils/
+COPY utils_fastapi.py DataModels.py ./
+# 2. copy individual files
 COPY Inference/main.py Inference/utils_image.py Inference/default_config.toml ./
 
 

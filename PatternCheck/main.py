@@ -1,10 +1,10 @@
-from fastapi_offline import FastAPIOffline as FastAPI
+# from fastapi_offline import FastAPIOffline as FastAPI
 # from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
-from prometheus_fastapi_instrumentator import Instrumentator
 
 from utils_coordinates import check_boxes, load_patterns
+from utils_fastapi import default_fastapi_setup
 
 
 import logging
@@ -39,33 +39,9 @@ elif DEFAULT_PATTERN_KEY not in PATTERNS:
 # entry points
 ENTRYPOINT = "/"
 
+title = "Pattern-Check"
 summary = "Minimalistic server providing a REST api to check patterns."
-app = FastAPI(
-    title="PatternCheck",
-    summary=summary,
-    contact={
-        "name": "max-scw",
-        "url": "https://github.com/max-scw/MinimalImageInference",
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://github.com/max-scw/MinimalImageInference/blob/main/LICENSE",
-    }
-)
-
-# create endpoint for prometheus
-instrumentator = Instrumentator(
-    excluded_handlers=["/test/*", "/metrics"],
-)
-instrumentator.instrument(app).expose(app)
-
-
-# ----- home
-@app.get("/")
-async def home():
-    return {
-        "Description": summary
-    }
+app = default_fastapi_setup(title, summary)
 
 
 @app.post(ENTRYPOINT)

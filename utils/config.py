@@ -12,6 +12,7 @@ from utils import (
     cast_logging_level
 )
 
+
 def set_logging():
     log_file = get_env_variable("LOGFILE", None)
     logging.basicConfig(

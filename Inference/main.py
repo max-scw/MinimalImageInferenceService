@@ -1,8 +1,7 @@
-from fastapi_offline import FastAPIOffline as FastAPI
+# from fastapi_offline import FastAPIOffline as FastAPI
 from fastapi import File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
-from prometheus_fastapi_instrumentator import Instrumentator
 from pathlib import Path
 
 import onnxruntime as ort
@@ -12,7 +11,8 @@ import sys
 from timeit import default_timer
 
 # custom packages
-from utils import get_config, get_env_variable, cast_logging_level
+from utils import get_config, set_env_variable
+from utils_fastapi import default_fastapi_setup
 from utils_image import scale_coordinates_to_image_size, prepare_image, image_from_bytes
 
 
@@ -35,27 +35,19 @@ logging.info(f"Model input(s) {input_shapes}")
 ENTRYPOINT_INFERENCE = "/inference"
 
 
-app = FastAPI()
-
-# create endpoint for prometheus
-Instrumentator().instrument(app).expose(app)  # produces a False in the console every time a valid entrypoint is called
-
-
-# ----- home
-@app.get("/")
-async def home():
-    return {
-        "Description": "Minimal inference server"
-    }
+title = "Minimal-ONNX-Inference-Server"
+summary = "Minimalistic server providing a REST api to an ONNX session."
+app = default_fastapi_setup(title, summary)
 
 
 @app.post(ENTRYPOINT_INFERENCE)
-async def predict(file: UploadFile = File(...)):
+async def predict(
+        file: UploadFile = File(...)
+):
     if file.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
 
     image_bytes = await file.read()
-
     image = image_from_bytes(image_bytes)
     # preprocess image
     img_mdl = prepare_image(image, CONFIG["MODEL_IMAGE_SIZE"], CONFIG["MODEL_PRECISION"])
@@ -84,7 +76,5 @@ async def predict(file: UploadFile = File(...)):
 
 
 if __name__ == "__main__":
-    # set logging to DEBUG when called as default entry point
-    logging.basicConfig(level=logging.DEBUG)
 
     uvicorn.run(app=app, port=5052)
