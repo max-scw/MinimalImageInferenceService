@@ -17,7 +17,6 @@ from DataModels import PatternRequest
 set_env_variable("LOGGING_LEVEL", "DEBUG")  # FIXME
 # get config
 CONFIG = get_config(default_prefix="")
-logging.debug(f"CONFIG: {CONFIG}")
 
 # load patterns
 PATTERNS = load_patterns(CONFIG["FOLDER"])
@@ -40,18 +39,18 @@ elif DEFAULT_PATTERN_KEY not in PATTERNS:
 # entry points
 ENTRYPOINT = "/"
 
-summary = "Minimalistic server to provide a REST api to check patterns."
+summary = "Minimalistic server providing a REST api to check patterns."
 app = FastAPI(
     title="PatternCheck",
     summary=summary,
-    # contact={
-    #     "name": "max-scw",
-    #     "url": "https://github.com/max-scw/FIXME",
-    # },
-    # license_info={
-    #     "name": "BSD 3-Clause License",
-    #     "url": "https://github.com/max-scw/FIXME/blob/main/LICENSE",
-    # }
+    contact={
+        "name": "max-scw",
+        "url": "https://github.com/max-scw/MinimalImageInference",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://github.com/max-scw/MinimalImageInference/blob/main/LICENSE",
+    }
 )
 
 # create endpoint for prometheus
@@ -71,12 +70,18 @@ async def home():
 
 @app.post(ENTRYPOINT)
 async def main(request: PatternRequest):
+    # bounding boxes
     bboxes = request.coordinates
-    keyword = request.pattern_key.lower() if request.pattern_key else DEFAULT_PATTERN_KEY
     class_ids = request.class_ids
+    # patterns to check against
+    keyword = request.pattern_key.lower() if request.pattern_key else DEFAULT_PATTERN_KEY
+    if request.pattern:
+        pattern = request.pattern
+    else:
+        pattern = PATTERNS[keyword]
 
     t0 = default_timer()
-    pattern_name, lg = check_boxes(bboxes, class_ids, PATTERNS[keyword])
+    pattern_name, lg = check_boxes(bboxes, class_ids, pattern)
     dt = default_timer() - t0
     logging.debug(f"check_boxes(): {pattern_name}, {lg}; took {dt:.4g} s")
 
