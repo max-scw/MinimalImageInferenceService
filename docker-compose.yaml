@@ -22,10 +22,10 @@ services:
       - 5005:5050  # external access port | for debugging
 
   inference-backend:
-    container_name: backend-onnx
+    container_name: inference-onnx
     build:
       context: ./
-      dockerfile: Backend.Dockerfile
+      dockerfile: Inference.Dockerfile
     image: schwmax/toy-inference-backend
     restart: unless-stopped
     environment:
@@ -85,3 +85,4 @@ services:
     ports:
       - 5006:8501  # external access port
 
+   # ----- FTP Server
