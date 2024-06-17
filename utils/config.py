@@ -27,6 +27,16 @@ def load_default_config(path_to_config: Union[str, Path]) -> dict:
     return config_default_env
 
 
+def set_logging():
+    log_file = get_env_variable("LOGFILE", None)
+    logging.basicConfig(
+        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.INFO)),
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)] +
+                 [logging.FileHandler(Path(log_file).with_suffix(".log"))] if log_file is not None else [],
+    )
+
+
 def get_config(default_prefix: str = "") -> dict:
     # --- load default config
     default_config = Path("./default_config.toml")
@@ -43,11 +53,5 @@ def get_config(default_prefix: str = "") -> dict:
     config = config_default | config_environment_vars
 
     # set logging
-    log_file = get_env_variable("LOGFILE", None)
-    logging.basicConfig(
-        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.INFO)),
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)] +
-                 [logging.FileHandler(Path(log_file).with_suffix(".log"))] if log_file is not None else [],
-    )
+    set_logging()
     return config

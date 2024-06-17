@@ -11,8 +11,16 @@ def camel_case_split(identifier):
     return [m.group(0) for m in matches]
 
 
-def get_env_variable(key: str, default_value):
+def get_env_variable(key: str, default_value: Any = None):
+    """retrieves a variable from the environment variables and casts it to a python native datatype.
+    If the variable is not found, the default variable is returned."""
     return cast(os.environ[key]) if key in os.environ else default_value
+
+
+def set_env_variable(key: str, val) -> bool:
+    """wrapper function to set an environment variable"""
+    os.environ[key] = str(val)
+    return True
 
 
 def get_environment_variables(prefix: str = None, with_prefix: bool = True) -> Dict[str, Any]:
