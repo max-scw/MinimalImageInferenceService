@@ -55,7 +55,10 @@ app = FastAPI(
 )
 
 # create endpoint for prometheus
-Instrumentator().instrument(app).expose(app)  # produces a False in the console every time a valid entrypoint is called
+instrumentator = Instrumentator(
+    excluded_handlers=["/test/*", "/metrics"],
+)
+instrumentator.instrument(app).expose(app)
 
 
 # ----- home
