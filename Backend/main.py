@@ -1,4 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi_offline import FastAPIOffline as FastAPI
+from fastapi import File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -64,6 +65,7 @@ async def predict(file: UploadFile = File(...)):
     output_name = ONNX_SESSION.get_outputs()[0].name
     results = ONNX_SESSION.run([output_name], {input_name: img_mdl})
     logging.debug(f"Inference took {(t0 - default_timer()) / 1000:.2} ms.")
+    # raw output json.dumps(results[0].tolist())
 
     bboxes = results[0][:, 1:5]
     class_ids = results[0][:, 5]
