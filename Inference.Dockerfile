@@ -30,7 +30,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
 ADD utils ./utils/
-COPY Inference/main.py Backend/utils_image.py Backend/default_config.toml ./
+COPY Inference/main.py Inference/utils_image.py Inference/default_config.toml ./
 
 
 # set to non-root user
