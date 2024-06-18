@@ -1,0 +1,27 @@
+
+
+[inference]
+#url="inference-backend:5050"
+url="http://localhost:5052/inference"
+
+
+[camera]
+#url="camera-adapter:5050/basler/take-photo"
+url="http://localhost:5051/basler/take-photo"
+
+serial_number=1
+ip_address="1.1.1.1"
+emulate_camera=true
+##      - TI_CAMERA_SERIAL_NUMBER=24339728
+#      - TI_CAMERA_IP_ADDRESS=192.168.10.5
+##      - TI_CAMERA_TIMEOUT
+#      - TI_CAMERA_TRANSMISSION_TYPE=Multicast
+#      - TI_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.221
+#      - TI_CAMERA_DESTINATION_PORT=46000
+#      - TI_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
+#      - TI_CAMERA_IMAGE_EXTENSION=.wbp
+image_extension=".jpg"
+
+[pattern-checker]
+#url="pattern-checker:5050"
+url="http://localhost:5053"
