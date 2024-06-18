@@ -24,8 +24,7 @@ class InferenceInfo(BaseModel):
 
 
 # ----- Camera
-class CameraInfo(BaseModel):
-    url: Union[str, Path]
+class CameraParameter(BaseModel):
     exposure_time_microseconds: Optional[int] = 10000
 
     serial_number: Optional[int] = None
@@ -42,15 +41,19 @@ class CameraInfo(BaseModel):
     emulate_camera: bool = False
 
 
+class CameraInfo(CameraParameter):
+    url: Union[str, Path]
+
+
 # ----- Pattern-Check
 class Pattern(BaseModel):
-    positions: List[List[Union[int, float]]]
+    positions: List[Tuple[Union[int, float], Union[int, float], Union[int, float], Union[int, float]]]
     tolerances: List[Union[int, float]]
 
 
 class PatternRequest(BaseModel):
     # bounding boxes: coordinates and classes
-    coordinates: List[List[Union[int, float]]]
+    coordinates: List[Tuple[Union[int, float], Union[int, float], Union[int, float], Union[int, float]]]
     class_ids: List[int]
     # pattern to check against
     pattern_key: Optional[str] = None
