@@ -14,9 +14,8 @@ from timeit import default_timer
 from utils import get_config, set_env_variable
 from DataModels import PatternRequest
 
-set_env_variable("LOGGING_LEVEL", "DEBUG")  # FIXME
 # get config
-CONFIG = get_config(default_prefix="")
+CONFIG = get_config()
 
 # load patterns
 PATTERNS = load_patterns(CONFIG["FOLDER"])
@@ -44,8 +43,8 @@ summary = "Minimalistic server providing a REST api to check patterns."
 app = default_fastapi_setup(title, summary)
 
 
-@app.post(ENTRYPOINT)
-async def main(request: PatternRequest):
+@app.post(ENTRYPOINT + "check")
+async def post(request: PatternRequest):
     # bounding boxes
     bboxes = request.coordinates
     class_ids = request.class_ids
@@ -59,7 +58,8 @@ async def main(request: PatternRequest):
     t0 = default_timer()
     pattern_name, lg = check_boxes(bboxes, class_ids, pattern)
     dt = default_timer() - t0
-    logging.debug(f"check_boxes(): {pattern_name}, {lg}; took {dt:.4g} s")
+
+    logging.debug(f"check_boxes(): pattern_name={pattern_name}, lg={lg}; took {dt:.4g} s")
 
     # output
     content = {
@@ -72,7 +72,5 @@ async def main(request: PatternRequest):
 
 
 if __name__ == "__main__":
-    # set logging to DEBUG when called as default entry point
-    logging.basicConfig(level=logging.DEBUG)
 
     uvicorn.run(app=app, port=5053)

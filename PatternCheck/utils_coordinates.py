@@ -39,7 +39,7 @@ def is_xyxy(bboxes: List[List[float]]) -> bool:
 
 
 def check_boxes(
-        bboxes: List[List[Union[int, float]]],
+        bboxes: List[Tuple[Union[int, float], Union[int, float], Union[int, float], Union[int, float]]],
         class_ids: List[int],
         config: Dict[str, Dict[str, Union[List[float], List[List[float]]]]],
 ) -> Tuple[str, List[bool]]:
@@ -89,8 +89,6 @@ def check_box(id_act, bbx_act, id_des, bbx_des, tol) -> bool:
                 found = False
                 break
     return found
-
-
 
 
 def xyxy2xywh(xyxy: List[List[float]]):
