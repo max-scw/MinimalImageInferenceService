@@ -1,5 +1,6 @@
 from pathlib import Path
 import tomllib
+import re
 
 import logging
 import sys
@@ -23,6 +24,7 @@ def set_logging():
     )
 
 
+re_replace = re.compile("[^a-zA-Z0-9]")
 def load_default_config(path_to_config: Union[str, Path]) -> dict:
     with open(Path(path_to_config), "rb") as fid:
         config_default = tomllib.load(fid)
@@ -32,6 +34,9 @@ def load_default_config(path_to_config: Union[str, Path]) -> dict:
         for ky, vl in dictionary.items():
             # variable name
             var_nm = ((f"{key}_" if key else "") + f"{ky}").upper()
+            # ensure that the variables names are only characters, digits, or underscores, i.e. variable names in python
+            var_nm = re_replace.sub("_", var_nm)
+            # recursion
             if isinstance(vl, dict):
                 variables |= flatten_dictionary(vl, var_nm)
             else:
