@@ -1,17 +1,12 @@
 version: '3'
 
 services:
-   # ----- toy inference
   basler-camera-service:
     container_name: camera-adapter
-    build:
-      context: ../BaslerCameraAdapter
-      dockerfile: BaslerCameraAdapter.Dockerfile
-    image: maxscw/basler-camera-adapter
+    image: maxscw/baslercameraadapter:v0.1.1
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
-      # customize
       - LOGGING_LEVEL=DEBUG
       - TEST_IMAGE_PATH=/home/app/testimages/  #*.bmp
     volumes:
@@ -22,14 +17,15 @@ services:
       - 5005:5050  # external access port | for debugging
 
   inference-backend:
-    container_name: inference-onnx
+    container_name: inference-backend
     build:
       context: ./
       dockerfile: Inference.Dockerfile
-    image: schwmax/toy-inference-backend
+#    image: maxscw/toy-inference-backend
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
+      - LOGGING_LEVEL=DEBUG
 #      - MODEL_FILENAME=yolov7-tiny.onnx
       - MODEL_IMAGE_SIZE=(544, 640)
       - MODEL_PRECISION=fp32
@@ -37,52 +33,79 @@ services:
     volumes:
       - ./models/yolov7-tiny.onnx:/home/app/data/model.onnx:ro
 #      - ./models/yolov7-tiny.onnx_fp16:/home/app/data/model.onnx
-#    ports:
-#      - 5007:5050  # external access port | only for debugging
+    ports:
+      - 5006:5050  # external access port | only for debugging
 
-  inference-frontend:
-    container_name: frontend-streamlit
+  pattern-check:
+    container_name: pattern-check-backend
     build:
       context: ./
-      dockerfile: Frontend.Dockerfile
-    image: schwmax/toy-inference-frontend
+      dockerfile: PatternCheck.Dockerfile
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
-      # variables to customize container
-#      - PREFIX=TI
-      - TI_GENERAL_TITLE="MVE for object recognition"
-      - TI_GENERAL_DESCRIPTION="loreipsum ..."
-      # model
-      - TI_MODEL_URL=http://backend-onnx:5050/inference
-#      - TI_MODEL_CLASS_MAP=
-      - TI_MODEL_COLOR_MAP=colors.txt
-#      - TI_MODEL_IMAGE_SIZE=(544, 640)
-      # camera
-#      - TI_CAMERA_URL=http://camera-adapter:5050/test/image
-      - TI_CAMERA_URL=http://camera-adapter:5050/basler/take-photo
-#      - TI_CAMERA_SERIAL_NUMBER=24339728
-      - TI_CAMERA_IP_ADDRESS=192.168.10.5
-#      - TI_CAMERA_TIMEOUT
-      - TI_CAMERA_TRANSMISSION_TYPE=Multicast
-      - TI_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.221
-      - TI_CAMERA_DESTINATION_PORT=46000
-      - TI_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
-      - TI_CAMERA_IMAGE_EXTENSION=.wbp
-      # impress
-      - TI_IMPRESS_PROJECT_NAME="Minimal Inference"
-      - TI_IMPRESS_AUTHOR=SCHWMAX
-#      - TI_IMPRESS_STATUS
-#      - TI_IMPRESS_ADDITIONAL_INFO
-      - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
-      # general configs
-      - TI_GENERAL_IMAGE_SIZE=(272, 320)
-      # streamlit
-      - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
+      - LOGGING_LEVEL=DEBUG
     volumes:
-      # mount folder to save images to
-      - ./data/:/home/app/data/:rw
+      - ./data:/home/app/data/:ro
     ports:
-      - 5006:8501  # external access port
+      - 5007:5050  # external access port | only for debugging
 
-   # ----- FTP Server
+  backend:
+    container_name: backend
+    build:
+      context: ./
+      dockerfile: Backend.Dockerfile
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - LOGGING_LEVEL=DEBUG
+#    volumes:
+#      - ./data:/home/app/data/:ro
+    ports:
+      - 5000:5050  # external access port | only for debugging
+
+#  inference-frontend:
+#    container_name: frontend-streamlit
+#    build:
+#      context: ./
+#      dockerfile: Frontend.Dockerfile
+#    image: schwmax/toy-inference-frontend
+#    restart: unless-stopped
+#    environment:
+#      - TZ=Europe/Berlin
+#      # variables to customize container
+##      - PREFIX=TI
+#      - TI_GENERAL_TITLE="MVE for object recognition"
+#      - TI_GENERAL_DESCRIPTION="loreipsum ..."
+#      # model
+#      - TI_MODEL_URL=http://backend-onnx:5050/inference
+##      - TI_MODEL_CLASS_MAP=
+#      - TI_MODEL_COLOR_MAP=colors.txt
+##      - TI_MODEL_IMAGE_SIZE=(544, 640)
+#      # camera
+##      - TI_CAMERA_URL=http://camera-adapter:5050/test/image
+#      - TI_CAMERA_URL=http://camera-adapter:5050/basler/take-photo
+##      - TI_CAMERA_SERIAL_NUMBER=24339728
+#      - TI_CAMERA_IP_ADDRESS=192.168.10.5
+##      - TI_CAMERA_TIMEOUT
+#      - TI_CAMERA_TRANSMISSION_TYPE=Multicast
+#      - TI_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.221
+#      - TI_CAMERA_DESTINATION_PORT=46000
+#      - TI_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
+#      - TI_CAMERA_IMAGE_EXTENSION=.wbp
+#      # impress
+#      - TI_IMPRESS_PROJECT_NAME="Minimal Inference"
+#      - TI_IMPRESS_AUTHOR=SCHWMAX
+##      - TI_IMPRESS_STATUS
+##      - TI_IMPRESS_ADDITIONAL_INFO
+#      - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
+#      # general configs
+#      - TI_GENERAL_IMAGE_SIZE=(272, 320)
+#      # streamlit
+#      - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
+#    volumes:
+#      # mount folder to save images to
+#      - ./data/:/home/app/data/:rw
+#    ports:
+#      - 5006:8501  # external access port
+

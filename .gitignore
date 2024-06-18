@@ -168,4 +168,8 @@ cython_debug/
 /Backend/utils/
 /Frontend/utils/
 /Inference/utils/
-/PatternCheck/utils
+/PatternCheck/utils/
+
+/FTP-Polling/
+
+*/test.py
