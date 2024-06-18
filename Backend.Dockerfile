@@ -5,7 +5,7 @@ FROM python:3.11-slim-bullseye
 
 # Metadata
 LABEL author=SCHWMAX
-LABEL version=2024.06.17
+LABEL version=2024.06.18
 
 # Environment variables (default values)
 ENV LOGFILE=Backend
@@ -31,9 +31,9 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_fastapi.py DataModels.py ./
+COPY utils_fastapi.py DataModels.py README.md LICENSE ./
 # 2. copy individual files
-COPY Backend/main.py Backend/default_config.toml ./
+COPY Backend/main.py Backend/default_config.toml Backend/utils_communication.py Backend/utils_data_models.py ./
 
 
 # set to non-root user

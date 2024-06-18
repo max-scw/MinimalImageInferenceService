@@ -5,10 +5,10 @@ FROM python:3.11-slim-bullseye
 
 # Metadata
 LABEL author=SCHWMAX
-LABEL version=2024.03.19
+LABEL version=2024.06.18
 
 # Environment variables (default values)
-ENV LOGFILE=ToyInferenceBackend
+ENV LOGFILE=Inference
 
 ARG DEBIAN_FRONTEND=noninteractived
 
@@ -31,7 +31,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_fastapi.py DataModels.py ./
+COPY utils_fastapi.py DataModels.py README.md LICENSE ./
 # 2. copy individual files
 COPY Inference/main.py Inference/utils_image.py Inference/default_config.toml ./
 
