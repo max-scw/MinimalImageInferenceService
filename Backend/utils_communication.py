@@ -91,7 +91,7 @@ def request_model_inference(
 
     # Send the POST request with the image
     ext = extension.strip(".")
-    content = {"file": (f"image.{ext}", image_raw, f"image/{ext}")}
+    content = {"image": (f"image.{ext}", image_raw, f"image/{ext}")}
 
     t0 = default_timer()
     response = requests.post(address, files=content)

@@ -42,16 +42,16 @@ app = default_fastapi_setup(title, summary)
 
 @app.post(ENTRYPOINT_INFERENCE)
 async def predict(
-        file: UploadFile = File(...)
+        image: UploadFile = File(...)
 ):
-    if file.content_type.split("/")[0] != "image":
+    if image.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
 
     # wait for file transmission
-    image_bytes = await file.read()
-    image = image_from_bytes(image_bytes)
+    image_bytes = await image.read()
+    img = image_from_bytes(image_bytes)
     # preprocess image
-    img_mdl = prepare_image(image, CONFIG["MODEL_IMAGE_SIZE"], CONFIG["MODEL_PRECISION"])
+    img_mdl = prepare_image(img, CONFIG["MODEL_IMAGE_SIZE"], CONFIG["MODEL_PRECISION"])
 
     t0 = default_timer()
     input_name = ONNX_SESSION.get_inputs()[0].name
@@ -65,8 +65,8 @@ async def predict(
     scores = results[0][:, 6]
 
     # re-scale boxes
-    logging.debug(f"predict(): img_mdl.shape={img_mdl.shape}, image.shape={image.shape}")
-    bboxes = scale_coordinates_to_image_size(bboxes, img_mdl.shape[2:], image.shape[:2])
+    logging.debug(f"predict(): img_mdl.shape={img_mdl.shape}, img.shape={img.shape}")
+    bboxes = scale_coordinates_to_image_size(bboxes, img_mdl.shape[2:], img.shape[:2])
 
     content = {
         "bboxes": bboxes.round(1).tolist(),

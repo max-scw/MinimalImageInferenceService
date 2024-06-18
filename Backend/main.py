@@ -1,12 +1,12 @@
 # from fastapi_offline import FastAPIOffline as FastAPI
-from fastapi import File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import File, UploadFile, HTTPException, Depends
+from fastapi.responses import Response, JSONResponse, StreamingResponse
 import uvicorn
 
 # import requests
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
-from DataModels import CameraInfo, InferenceInfo
+from DataModels import CameraParameter, CameraInfo, InferenceInfo
 
 
 import logging
@@ -30,18 +30,30 @@ summary = "Minimalistic server providing a REST api to orchestrate a containeriz
 app = default_fastapi_setup(title, summary)
 
 
-@app.post(ENTRYPOINT)
-async def main(
-        camera: CameraInfo,
+@app.get(ENTRYPOINT + "main")
+def main(
+        camera: CameraParameter = Depends(),
         # inference: InferenceInfo,
         # file: UploadFile = File(...)
 ):
-    # TODO: update all data models with info sent with
+    # create local CameraInfo instance
+    camera_ = CameraInfo(camera=camera)
+    # update missing fields
+    for attr in CAMERA.__fields__:
+        value = getattr(CAMERA, attr)
+        if not hasattr(camera_, attr):
+            setattr(camera_, attr, value)
 
     # ----- Camera
-    logging.debug(f"Request camera at {camera.url}")
+    logging.debug(f"Request camera: {camera_}")
     try:
-        img_bytes = trigger_camera(camera, timeout=50000)
+        t0 = default_timer()
+        # trigger camera
+        img_bytes = trigger_camera(camera_, timeout=50000)
+        # log execution time
+        dt = default_timer() - t0
+        logging.debug(f"Trigger camera took {dt * 1000:.4g} ms")
+
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: trigger_camera(...). Camera not responding."
         logging.error(msg)
@@ -52,14 +64,19 @@ async def main(
         raise HTTPException(status_code=400, detail=msg)
 
     # ----- Inference backend
-    logging.debug(f"Request model inference backend at {CONFIG['INFERENCE_URL']}")
     try:
+        address = CONFIG["INFERENCE_URL"]
+        logging.debug(f"Request model inference backend at {address}")
+        t0 = default_timer()
         result = request_model_inference(
-            address=CONFIG["INFERENCE_URL"],
+            address=address,
             image_raw=img_bytes,
             extension=CAMERA.image_extension
         )
-        logging.debug(f"main(): {result} = request_model_inference(...)")
+        # log execution time
+        dt = default_timer() - t0
+        logging.debug(f"Inference took {dt * 1000:.4g} ms; result={result}")
+
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: request_model_inference(...). Inference backend not responding."
         logging.error(msg)
@@ -74,6 +91,10 @@ async def main(
     # ----- Check bounding-box pattern
     # TODO: check bounding box pattern
     logging.debug(f"Request pattern checker at {CONFIG['PATTERN_CHECKER_URL']}")
+    t0 = default_timer()
+    # log execution time
+    dt = default_timer() - t0
+    logging.debug(f"Pattern check took {dt * 1000:.4g} ms")
     # TODO write wrapper for the request
     decision = None
     pattern_name = None
@@ -93,15 +114,13 @@ async def main(
         **result,
     }
 
-    return StreamingResponse(
-        img_bytes,
-        media_type="image/jpeg",
+    return Response(
+        content=img_bytes,
+        media_type=f"image/{CAMERA.image_extension.strip('.')}",
         headers={"content": str(content)}
     )
 
 
 if __name__ == "__main__":
-    # set logging to DEBUG when called as default entry point
-    logging.basicConfig(level=logging.DEBUG)
 
     uvicorn.run(app=app, port=5050)
