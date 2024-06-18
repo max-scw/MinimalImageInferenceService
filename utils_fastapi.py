@@ -1,4 +1,11 @@
+import fastapi
+#from fastapi import FastAPI
 from fastapi_offline import FastAPIOffline as FastAPI
+from fastapi import File, UploadFile, HTTPException
+from datetime import datetime
+import sys
+import re
+
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
@@ -23,9 +30,11 @@ def default_fastapi_setup(title: str = None, summary: str = None, description: s
 
     # create endpoint for prometheus
     instrumentator = Instrumentator(
-        excluded_handlers=["/test/*", "/metrics"],
+        excluded_handlers=["/test/*", "/metrics"], # FIXME: not working
     )
-    instrumentator.instrument(app, metric_namespace=title.lower()).expose(app)
+    # replace not allowed characters
+    metric_namespace = re.sub("[^a-zA-Z0-9]", "_", title.lower())
+    instrumentator.instrument(app, metric_namespace=metric_namespace).expose(app)
 
     # ----- home
     @app.get("/")
@@ -33,9 +42,14 @@ def default_fastapi_setup(title: str = None, summary: str = None, description: s
         return {
             "Title": title,
             "Description": summary,
-            "Help": "see /docs for help.",
+            "Help": "see /docs for help (automatic docs with Swagger UI).",
+            "Software": {
+                "fastAPI": fastapi.__version__,
+                "Python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+            },
             "License": license_info,
-            "Impress": contact
+            "Impress": contact,
+            # "Startup date": datetime.now()
         }
 
     return app
