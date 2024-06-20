@@ -23,5 +23,6 @@ emulate_camera=true
 image_extension=".jpg"
 
 [pattern-checker]
-#url="pattern-checker:5050/check"
-url="http://localhost:5053/check"
+#prefix="PC"
+folder="./data/"
+default_pattern=""

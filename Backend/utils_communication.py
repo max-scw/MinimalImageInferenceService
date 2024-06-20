@@ -1,13 +1,11 @@
 import requests
 import urllib.parse
 from timeit import default_timer
-
-
-from typing import Union, Dict, List
 import logging
 
+from DataModels import CameraInfo, CameraPhotoParameter, ResultInference
 
-from DataModels import CameraInfo
+from typing import Union, Dict, List
 
 
 def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes, None]:
@@ -22,33 +20,7 @@ def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes,
 
 def build_url(camera_info: CameraInfo) -> str:
 
-    params = dict()
-    if camera_info.exposure_time_microseconds is not None:
-        params["exposure_time_microseconds"] = camera_info.exposure_time_microseconds
-
-    if camera_info.serial_number is not None:
-        params["serial_number"] = camera_info.serial_number
-    elif camera_info.ip_address is not None:
-        params["ip_address"] = camera_info.ip_address
-        if camera_info.subnet_mask is not None:
-            params["subnet_mask"] = camera_info.subnet_mask
-    else:
-        params["emulate_camera"] = True
-
-    if camera_info.timeout_ms is not None:
-        params["timeout"] = camera_info.timeout_ms
-
-    if camera_info.transmission_type is not None:
-        params["transmission_type"] = camera_info.transmission_type
-
-    if camera_info.destination_ip_address is not None:
-        params["destination_ip_address"] = camera_info.destination_ip_address
-    if camera_info.transmission_type is not None:
-        params["destination_port"] = camera_info.destination_port
-
-    if camera_info.emulate_camera:
-        params["emulate_camera"] = camera_info.emulate_camera
-
+    params = {ky: vl for ky, vl in camera_info.dict().items() if (vl is not None) and (ky in CameraPhotoParameter.model_fields)}
     # build url
     url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
     return url
@@ -85,7 +57,7 @@ def request_model_inference(
         address: str,
         image_raw: bytes,
         extension: str
-) -> Dict[str, Union[List[int], List[float], List[List[float]]]]:
+) -> ResultInference:
 
     logging.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
 

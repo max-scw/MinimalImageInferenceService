@@ -14,7 +14,7 @@ from timeit import default_timer
 from utils import get_config, set_env_variable
 from utils_fastapi import default_fastapi_setup
 from utils_image import scale_coordinates_to_image_size, prepare_image, image_from_bytes
-
+from DataModels import ResultInference
 
 # get config
 CONFIG = get_config()
@@ -42,7 +42,8 @@ app = default_fastapi_setup(title, summary)
 
 @app.post(ENTRYPOINT_INFERENCE)
 async def predict(
-        image: UploadFile = File(...)
+        image: UploadFile = File(...),
+        response_model=ResultInference,
 ):
     if image.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")

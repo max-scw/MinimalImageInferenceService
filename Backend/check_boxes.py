@@ -1,8 +1,36 @@
 import yaml
 from pathlib import Path
 import logging
+import warnings
 
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple, Union, Any
+
+
+def get_patterns_from_config(config: Dict[str, Any]) -> Tuple[dict, str]:
+
+    if "FOLDER" in config:
+        folder = config["FOLDER"]
+    else:
+        warnings.warn("No folder provided where patterns are stored in.")
+        return dict(), ""
+
+    # load patterns
+    patterns = load_patterns(folder)
+    # get default pattern key
+    default_pattern_key = config["DEFAULT_PATTERN"] if "DEFAULT_PATTERN" in config else None
+
+    # use fist pattern if no pattern key was provided
+    if not default_pattern_key:
+        if len(patterns) > 0:
+            default_pattern_key = list(patterns.keys())[0]
+            logging.info(f"No default pattern key provided. Using '{default_pattern_key}' as default pattern")
+        else:
+            logging.warning(f"No pattern file found in {folder}.")
+    elif default_pattern_key not in patterns:
+        msg = f"Default pattern '{default_pattern_key}' not found in {folder}"
+        logging.error(msg)
+        raise Exception(msg)
+    return patterns, default_pattern_key
 
 
 def load_yaml(path: Union[str, Path]) -> dict:

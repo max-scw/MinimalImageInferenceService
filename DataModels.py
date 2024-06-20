@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 from pathlib import Path
 
+from typing_extensions import Annotated
 from typing import Optional, List, Dict, Tuple, Union, Literal
 
 
@@ -25,24 +27,61 @@ class InferenceInfo(BaseModel):
 
 # ----- Camera
 class CameraParameter(BaseModel):
-    exposure_time_microseconds: Optional[int] = 10000
-
     serial_number: Optional[int] = None
     ip_address: Optional[str] = None
     subnet_mask: Optional[str] = None
 
-    timeout_ms: Optional[int] = None
     transmission_type: Optional[str] = None
     destination_ip_address: Optional[str] = None
-    destination_port: Optional[int] = None
+    destination_port: Optional[Annotated[int, Field(strict=True, le=65535, ge=0)]] = None
 
-    image_extension: Optional[str] = None
+
+class CameraPhotoParameter(CameraParameter):
+    exposure_time_microseconds: Optional[int] = 10000
+    timeout: Optional[int] = None  # milli seconds
 
     emulate_camera: bool = False
+    # image
+    format: Optional[str] = "jpeg"
+    quality: Optional[Annotated[int, Field(strict=False,  le=100)]] = 85
 
 
-class CameraInfo(CameraParameter):
+
+class CameraInfo(CameraPhotoParameter):
     url: Union[str, Path]
+
+
+# ----- Main
+class ResultInference(BaseModel):
+    bboxes: List[
+        Tuple[
+            Union[int, float],
+            Union[int, float],
+            Union[int, float],
+            Union[int, float]
+        ]
+    ]
+    class_ids: List[int]
+    scores: List[float]
+
+
+class OptionsReturnValuesMain(BaseModel):
+    decision: Optional[bool] = True
+    pattern_name: Optional[bool] = True
+    img: Optional[bool] = True
+    img_drawn: Optional[bool] = True
+    # details
+    bboxes: Optional[bool] = False
+    class_ids: Optional[bool] = False
+    scores: Optional[bool] = False
+
+
+# class ResultMain(ResultInference):
+#     decision: bool
+#     pattern_name: Optional[str] = None
+#     # images
+#     image_original: Optional[str] = None # Base64 encoded
+#     image_drawn: Optional[str] = None # Base64 encoded
 
 
 # ----- Pattern-Check
@@ -58,3 +97,5 @@ class PatternRequest(BaseModel):
     # pattern to check against
     pattern_key: Optional[str] = None
     pattern: Optional[Union[Pattern, Dict[str, Pattern]]] = None
+
+
