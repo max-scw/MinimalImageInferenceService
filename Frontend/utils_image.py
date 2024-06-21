@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 from datetime import datetime
 import io
+import base64
 
 from typing import Tuple
 
@@ -45,3 +46,9 @@ def resize_image(image: Image, size: Tuple[int, int] = None) -> Image:
         return image_.resize(size, Image.BICUBIC)
     else:
         return image_
+
+
+def base64_to_image(string: str) -> Image:
+    msg = base64.b64decode(string)
+    buf = io.BytesIO(msg)
+    return Image.open(buf)

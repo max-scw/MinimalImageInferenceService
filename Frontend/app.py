@@ -8,12 +8,10 @@ from datetime import datetime
 
 # custom packages
 from utils_streamlit import write_impress
-from utils_communication import trigger_camera, request_model_inference
-from utils_image import save_image, bytes_to_image, resize_image
-from utils_coordinates import check_boxes
+from utils_communication import request_backend
+from utils_image import save_image, resize_image, base64_to_image
 from utils import get_env_variable, cast_logging_level
 from config import get_config_from_environment_variables, get_page_title
-from plot_pil import plot_bboxs
 
 
 @st.cache_data
@@ -115,7 +113,7 @@ def main():
     set_css_config()
 
     # load configs
-    model_info, camera_info, app_settings = get_config()
+    camera_info, settings_backend, app_settings = get_config()
 
     # initialize session state
     if "image" not in st.session_state:
@@ -170,71 +168,42 @@ def main():
             use_container_width=True
         )
 
-    with (columns[1]):
+    with columns[1]:
         # processing
         scores = []
         if camera_triggered:
             reset_session_state_image()
-            with st.spinner("taking photo ..."):
-                try:
-                    img_raw = trigger_camera(camera_info, timeout=50000)
-                except (TimeoutError, ConnectionError):
-                    st.error("Camera not responding.", icon="🚨")
-                    logging.error("TimeoutError: trigger_camera(...). Camera not responding.")
+            # call backend
+            response = request_backend(
+                address=app_settings.address_backend,
+                camera=camera_info,
+                settings=settings_backend,
+                timeout=app_settings.timeout
+            )
 
+            content = response.json()
             # keep image in session state
-            image = bytes_to_image(img_raw)
+            images = content["images"]
+            image = base64_to_image(images["img"])
             st.session_state.image["raw"] = image
             st.session_state.image["show"] = resize_image(image, app_settings.image_size)
 
-            with st.spinner("analyzing model ..."):
-                msg = f"main(): request_model_inference({model_info.url}, image_raw={image.size}, extension={camera_info.image_extension})"
-                logging.debug(msg)
-                try:
-                    result = request_model_inference(
-                        address=model_info.url,
-                        image_raw=img_raw,
-                        extension=camera_info.image_extension
-                    )
-                    logging.debug(f"main(): {result} = request_model_inference(...)")
-                except (TimeoutError, ConnectionError):
-                    st.error("Backend not responding.", icon="🚨")
-                    logging.error("TimeoutError: request_model_inference(...). Backend not responding.")
-                # st.success(f"Model inference successful. ({datetime.now().strftime('%H:%M:%S %d.%m.%Y')})")
+            if "img_drawn" in images:
+                img_draw = base64_to_image(images["img_drawn"])
+                st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
+                st.session_state.show_bboxs = True
+            else:
+                st.session_state.image["bboxes"] = st.session_state.image["show"]
 
-                if isinstance(result, dict):
-                    bboxes = result["bboxes"]
-                    class_ids = result["class_ids"]
-                    scores = result["scores"]
-                else:
-                    bboxes, class_ids, scores = [], [], []
+            if "results" in content:
+                result = content["results"]
+                bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
+            else:
+                bboxes, class_ids, scores = [], [], []
 
-                if bboxes:
-                    img_draw = plot_bboxs(
-                        st.session_state.image["raw"].convert("RGB"),
-                        bboxes,
-                        scores,
-                        class_ids,
-                        class_map=model_info.class_map,
-                        color_map=model_info.color_map
-                    )
-                    st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
-                    st.session_state.show_bboxs = True
-                else:
-                    st.session_state.image["bboxes"] = st.session_state.image["show"]
-
-            with st.spinner("check bounding boxes ..."):
-                if bboxes and (app_settings.bbox_pattern is not None):
-                    # scale boxes to relative coordinates
-                    imgsz = img_draw.size
-                    bboxes_rel = np.array(bboxes) / (imgsz * 2)
-
-                    pattern_name, lg = check_boxes(bboxes_rel.tolist(), class_ids, app_settings.bbox_pattern)
-                    logging.debug(f"check_boxes(): {pattern_name}, {lg}")
-
-                    st.session_state.image["decision"] = (len(lg) > 1) and all(lg)
-                    st.session_state.image["pattern_name"] = pattern_name
-                    st.session_state.image["pattern_lg"] = lg
+            st.session_state.image["decision"] = content["decision"]
+            st.session_state.image["pattern_name"] = content["pattern_name"]
+            st.session_state.image["pattern_lg"] = content["pattern_lg"]
 
         # always show decision
         if st.session_state.image["decision"]:
@@ -256,7 +225,7 @@ def main():
             st.image(img2show)
 
     # save image
-    if overrule_decision or (scores and (min(scores) < app_settings.min_model_score)):
+    if overrule_decision or (scores and (min(scores) < settings_backend.min_score)):
         if st.session_state.image["path_to_saved_image"] is None:
             path_to_img = save_image(st.session_state.image["raw"], app_settings.data_folder)
             # keep filename in session state to prevent that the image is saved twice

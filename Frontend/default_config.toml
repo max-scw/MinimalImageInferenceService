@@ -6,7 +6,6 @@ additional_info=""
 project_link=""
 
 [camera]
-url="http://localhost:5051/test/image"
 exposure_time_microseconds=10000
 # camera address
 serial_number=""
@@ -21,15 +20,18 @@ image_extension=".bmp"
 emulate_camera=false
 
 [model]
-url="http://localhost:5052/inference"
 folder_head="/home/app/"
 folder_data="data/"
 class_map=""
 color_map=""
 
 [general]
+url_backend="http://backend:5050/main"
 file_type_save_image=".webp"
+data_folder="./data"
+timeout=10000
 #file_box_pattern="../data/desired_coordinates.yml"
 #image_size=[640,544]
 #save_all_images=false
-min_model_score=0.1  # set to 1 to save all images
+#min_confidence=0.5  # set to 1 to save all images
+#pattern_key=
