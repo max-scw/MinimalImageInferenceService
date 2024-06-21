@@ -3,6 +3,8 @@ from fastapi import File, UploadFile, HTTPException, Depends
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 import uvicorn
 
+import numpy as np
+
 import logging
 from timeit import default_timer
 from threading import Thread
@@ -97,6 +99,11 @@ def main(
         dt = default_timer() - t0
         logger.debug(f"Inference took {dt * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
+        lg = scores >= settings.min_score
+        scores = np.asarray(scores)[lg]
+        class_ids = np.asarray(class_ids)[lg]
+        bboxes = np.asarray(bboxes)[lg]
+        logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score}.")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
         logger.error(msg)
@@ -106,7 +113,6 @@ def main(
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
     # TODO: draw bounding-boxes on image? => Threading
-    # TODO: add score threshold
 
     # img from bytes
     img = bytes_to_image(img_bytes)
