@@ -20,7 +20,7 @@ def default_fastapi_setup(title: str = None, summary: str = None, description: s
 
     contact = {
         "name": "max-scw",
-        "url": "https://github.com/max-scw/MinimalImageInference",
+        "url": "https://github.com/max-scw/",
     }
 
     app = FastAPI(

@@ -1,25 +1,23 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.1.1
+    image: maxscw/baslercameraadapter:v0.1.4
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
-      - TEST_IMAGE_PATH=/home/app/testimages/  #*.bmp
     volumes:
-      - ./testimages:/home/app/testimages
+      - ./testimages:/home/app/test
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
       - 5005:5050  # external access port | for debugging
 
-  inference-backend:
-    container_name: inference-backend
+  inference-service:
+    container_name: inference
     build:
       context: ./
       dockerfile: Inference.Dockerfile
-#    image: maxscw/toy-inference-backend
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -34,7 +32,7 @@ services:
     ports:
       - 5006:5050  # external access port | only for debugging
 
-  backend:
+  backend-service:
     container_name: backend
     build:
       context: ./
@@ -43,6 +41,8 @@ services:
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
+      - INFERENCE_URL=http://inference:5050/inference
+      - CAMERA_URL=http://camera-adapter:5050/basler/take-photo
 #    volumes:
 #      - ./data:/home/app/data/:ro
     ports:
