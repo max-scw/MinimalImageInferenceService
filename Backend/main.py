@@ -43,6 +43,9 @@ title = "Backend"
 summary = "Minimalistic server providing a REST api to orchestrate a containerized computer vision application."
 app = default_fastapi_setup(title, summary)
 
+# get logger
+logger = logging.getLogger("uvicorn")
+
 
 @app.get(ENTRYPOINT + "main")
 def main(
@@ -59,29 +62,29 @@ def main(
             setattr(camera_, attr, value)
 
     # ----- Camera
-    logging.debug(f"Request camera: {camera_}")
+    logger.debug(f"Request camera: {camera_}")
     try:
         t0 = default_timer()
         # trigger camera
         img_bytes = trigger_camera(camera_, timeout=50000)
         # log execution time
         dt = default_timer() - t0
-        logging.debug(f"Trigger camera took {dt * 1000:.4g} ms")
+        logger.debug(f"Trigger camera took {dt * 1000:.4g} ms")
 
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: trigger_camera(...). Camera not responding."
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at camera backend: {e}"
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
 
     # ----- Inference backend
     bboxes = [(0, 0, 0, 0)]
     try:
         address = CONFIG["INFERENCE_URL"]
-        logging.debug(f"Request model inference backend at {address}")
+        logger.debug(f"Request model inference backend at {address}")
         t0 = default_timer()
         result: ResultInference = request_model_inference(
             address=address,
@@ -92,15 +95,15 @@ def main(
 
         # log execution time
         dt = default_timer() - t0
-        logging.debug(f"Inference took {dt * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
+        logger.debug(f"Inference took {dt * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at inference backend: {e}"
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
     # TODO: draw bounding-boxes on image? => Threading
 
@@ -135,17 +138,17 @@ def main(
         )
         # log execution time
         dt = default_timer() - t0
-        logging.debug(f"Pattern check took {dt * 1000:.4g} ms")
+        logger.debug(f"Pattern check took {dt * 1000:.4g} ms")
 
         if decision:
             msg = f"Bounding-Boxes found for pattern {pattern_name}"
-            logging.info(msg)
+            logger.info(msg)
         elif pattern_name:
             msg = (f"Not all objects were found. "
                    f"Best pattern: {pattern_name} with {lg}.")
-            logging.warning(msg)
+            logger.warning(msg)
     else:
-        logging.info("No pattern provided to check bounding-boxes.")
+        logger.info("No pattern provided to check bounding-boxes.")
 
     # ----- Return
     # thread_draw.join()
