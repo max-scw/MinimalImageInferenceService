@@ -34,20 +34,6 @@ services:
     ports:
       - 5006:5050  # external access port | only for debugging
 
-  pattern-check:
-    container_name: pattern-check-backend
-    build:
-      context: ./
-      dockerfile: PatternCheck.Dockerfile
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/Berlin
-      - LOGGING_LEVEL=DEBUG
-    volumes:
-      - ./data:/home/app/data/:ro
-    ports:
-      - 5007:5050  # external access port | only for debugging
-
   backend:
     container_name: backend
     build:
