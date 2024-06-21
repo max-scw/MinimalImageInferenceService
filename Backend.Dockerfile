@@ -33,7 +33,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 ADD utils ./utils/
 COPY utils_fastapi.py DataModels.py README.md LICENSE ./
 # 2. copy individual files
-COPY Backend/main.py Backend/default_config.toml Backend/utils_communication.py Backend/utils_data_models.py ./
+COPY Backend/main.py Backend/default_config.toml Backend/utils_communication.py Backend/utils_data_models.py Backend/plot_pil.py Backend/helper_functions.py ./
 
 
 # set to non-root user
