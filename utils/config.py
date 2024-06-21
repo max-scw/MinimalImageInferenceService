@@ -19,8 +19,8 @@ def set_logging():
     logging.basicConfig(
         level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.INFO)),
         format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)] +
-                 [logging.FileHandler(Path(log_file).with_suffix(".log"))] if log_file is not None else [],
+        # handlers=[logging.StreamHandler(sys.stdout)] +
+        #          [logging.FileHandler(Path(log_file).with_suffix(".log"))] if log_file is not None else [],
     )
 
 

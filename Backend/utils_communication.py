@@ -8,12 +8,15 @@ from DataModels import CameraInfo, CameraPhotoParameter, ResultInference
 from typing import Union, Dict, List
 
 
+logger = logging.getLogger("uvicorn")
+
+
 def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes, None]:
     """
     wrapper
     """
     url = build_url(camera_info)
-    logging.debug(f"trigger_camera(): url={url}")
+    logger.debug(f"trigger_camera(): url={url}")
 
     return request_camera(url, timeout)
 
@@ -32,7 +35,7 @@ def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
     response = requests.get(url=address, timeout=timeout)
     status_code = response.status_code
 
-    logging.info(
+    logger.info(
         f"Requesting camera {address} took {(default_timer() - t0) / 1000:.2} ms. "
         f"(Status code: {status_code})"
     )
@@ -59,7 +62,7 @@ def request_model_inference(
         extension: str
 ) -> ResultInference:
 
-    logging.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
+    logger.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
 
     # Send the POST request with the image
     ext = extension.strip(".")
@@ -69,12 +72,12 @@ def request_model_inference(
     response = requests.post(address, files=content)
     status_code = response.status_code
 
-    logging.info(
+    logger.info(
         f"Requesting model inference {address} took {(default_timer() - t0) / 1000:.2} ms. "
         f"(Status code: {status_code})"
     )
 
-    logging.debug(f"request_model_inference(): {response}")
+    logger.debug(f"request_model_inference(): {response}")
 
     # Check the response
     if status_code == 200:
