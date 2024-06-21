@@ -6,23 +6,24 @@ from typing_extensions import Annotated
 from typing import Optional, List, Dict, Tuple, Union, Literal
 
 
-
-# class AppSettings(BaseModel):
-#     data_folder: Path
-#     impress: Optional[ImpressInfo] = None
-#     title: Optional[str] = None
-#     description: Optional[str] = None
-#     file_type_save_image: Optional[str] = ".webp"
-#     bbox_pattern: Optional[dict] = None
-#     image_size: Optional[Tuple[int, int]] = None
-#     min_score: Optional[float] = 0.5
-
-
 # ----- Inference: NN-model
 class InferenceInfo(BaseModel):
     url: Union[str, Path]
     class_map: Optional[Dict[int, str]] = None
     color_map: Optional[Dict[int, str]] = None
+
+
+class ResultInference(BaseModel):
+    bboxes: List[
+        Tuple[
+            Union[int, float],
+            Union[int, float],
+            Union[int, float],
+            Union[int, float]
+        ]
+    ]
+    class_ids: List[int]
+    scores: List[float]
 
 
 # ----- Camera
@@ -46,23 +47,14 @@ class CameraPhotoParameter(CameraParameter):
     quality: Optional[Annotated[int, Field(strict=False,  le=100)]] = 85
 
 
-
 class CameraInfo(CameraPhotoParameter):
     url: Union[str, Path]
 
 
 # ----- Main
-class ResultInference(BaseModel):
-    bboxes: List[
-        Tuple[
-            Union[int, float],
-            Union[int, float],
-            Union[int, float],
-            Union[int, float]
-        ]
-    ]
-    class_ids: List[int]
-    scores: List[float]
+class SettingsMain(BaseModel):
+    pattern_key: Optional[str] = None,
+    min_score: Optional[Annotated[float, Field(strict=True, le=1, ge=0)]] = 0.5,
 
 
 class OptionsReturnValuesMain(BaseModel):
@@ -74,14 +66,6 @@ class OptionsReturnValuesMain(BaseModel):
     bboxes: Optional[bool] = False
     class_ids: Optional[bool] = False
     scores: Optional[bool] = False
-
-
-# class ResultMain(ResultInference):
-#     decision: bool
-#     pattern_name: Optional[str] = None
-#     # images
-#     image_original: Optional[str] = None # Base64 encoded
-#     image_drawn: Optional[str] = None # Base64 encoded
 
 
 # ----- Pattern-Check

@@ -18,7 +18,7 @@ from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
 
 from DataModels import (
-    CameraParameter,
+    SettingsMain,
     CameraPhotoParameter,
     CameraInfo,
     # ResultMain,
@@ -50,7 +50,7 @@ logger = logging.getLogger("uvicorn")
 @app.get(ENTRYPOINT + "main")
 def main(
         camera: CameraPhotoParameter = Depends(),
-        pattern_key: Optional[str] = None,
+        settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
     # create local CameraInfo instance
@@ -106,6 +106,7 @@ def main(
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
     # TODO: draw bounding-boxes on image? => Threading
+    # TODO: add score threshold
 
     # img from bytes
     img = bytes_to_image(img_bytes)
@@ -126,6 +127,8 @@ def main(
     # ----- Check bounding-box pattern
     decision = None
     pattern_name = None
+    lg = None
+    pattern_key = settings.pattern_key
     if pattern_key is None:
         pattern_key = DEFAULT_PATTERN_KEY
 
@@ -159,6 +162,7 @@ def main(
         content["decision"] = decision
     if return_options.pattern_name:
         content["pattern_name"] = pattern_name
+        content["pattern_lg"] = lg
 
     if return_options.img or return_options.img_drawn:
         content["images"] = dict()
