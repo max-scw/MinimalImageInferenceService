@@ -4,6 +4,10 @@ from fastapi.responses import Response, JSONResponse, StreamingResponse
 import uvicorn
 
 import numpy as np
+from datetime import datetime
+from pathlib import Path
+from PIL import Image
+import re
 
 import logging
 from timeit import default_timer
@@ -14,7 +18,7 @@ from plot_pil import plot_bboxs
 from check_boxes import check_boxes, get_patterns_from_config
 from helper_functions import image_to_base64, bytes_to_image
 
-from utils import get_config
+from utils import get_config, get_dict_from_file_or_envs, set_env_variable
 from utils_data_models import build_camera_info
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
@@ -31,11 +35,16 @@ from DataModels import (
 )
 from typing import Union, Tuple, List, Dict, Any, Optional
 
-
+set_env_variable("LOG_LEVEL", "DEBUG")  # FIXME
 # get config
 CONFIG = get_config()
 CAMERA = build_camera_info(CONFIG)
 PATTERNS, DEFAULT_PATTERN_KEY = get_patterns_from_config(CONFIG)
+COLOR_MAP = get_dict_from_file_or_envs(CONFIG, "MODEL_COLOR_MAP")
+CLASS_MAP = get_dict_from_file_or_envs(CONFIG, "MODEL_CLASS_MAP")
+
+m = re.search("(?<=every\s)\d+", CONFIG["GENERAL_SAVE_IMAGES"], re.IGNORECASE)
+save_every_x = int(m.group()) if m else None
 
 # entry points
 ENTRYPOINT = "/"
@@ -47,6 +56,8 @@ app = default_fastapi_setup(title, summary)
 
 # get logger
 logger = logging.getLogger("uvicorn")
+# initialize counter
+counter = 0
 
 
 @app.get(ENTRYPOINT + "main")
@@ -99,10 +110,12 @@ def main(
         dt = default_timer() - t0
         logger.debug(f"Inference took {dt * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
+        # to numpy
+        scores = np.asarray(scores)
         lg = scores >= settings.min_score
-        scores = np.asarray(scores)[lg]
-        class_ids = np.asarray(class_ids)[lg]
-        bboxes = np.asarray(bboxes)[lg]
+        scores = scores[lg].tolist()
+        class_ids = np.asarray(class_ids)[lg].tolist()
+        bboxes = np.asarray(bboxes)[lg].tolist()
         logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score}.")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
@@ -113,12 +126,10 @@ def main(
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
     # TODO: draw bounding-boxes on image? => Threading
+    # TODO: save images
 
     # img from bytes
     img = bytes_to_image(img_bytes)
-
-    class_map = None
-    color_map = None
 
     # ----- Plot bounding-boxes
     img_draw = plot_bboxs(
@@ -126,8 +137,8 @@ def main(
         bboxes,
         scores,
         class_ids,
-        class_map=class_map,
-        color_map=color_map
+        class_map=CLASS_MAP,
+        color_map=COLOR_MAP
     )
 
     # ----- Check bounding-box pattern
@@ -135,6 +146,8 @@ def main(
     pattern_name = None
     lg = None
     pattern_key = settings.pattern_key
+
+    note_to_saved_image = None
     if pattern_key is None:
         pattern_key = DEFAULT_PATTERN_KEY
 
@@ -156,8 +169,26 @@ def main(
             msg = (f"Not all objects were found. "
                    f"Best pattern: {pattern_name} with {lg}.")
             logger.warning(msg)
+
+        # Save image if applicable
+        if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
+            note_to_saved_image = "failed"
     else:
         logger.info("No pattern provided to check bounding-boxes.")
+
+    # save image
+    global counter
+    if note_to_saved_image or \
+            (isinstance(CONFIG["GENERAL_SAVE_IMAGES"], str) and (CONFIG["GENERAL_SAVE_IMAGES"].lower() == "all")) or \
+            (save_every_x and (counter % save_every_x == 0)):
+        Thread()
+        Thread(target=save_image,
+               args=(img,
+                     camera_.format,
+                     CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
+                     note_to_saved_image
+                     )
+               ).start()
 
     # ----- Return
     # thread_draw.join()
@@ -186,6 +217,8 @@ def main(
         if return_options.scores:
             content["results"]["scores"] = scores
 
+    # increase global counter
+    counter += 1
     return JSONResponse(content=content)
 
 
@@ -234,6 +267,24 @@ def _check_pattern(
     return decision, pattern_name, lg
 
 
-if __name__ == "__main__":
+def save_image(img: Image, image_extension: str, folder: str = None, note: Union[str, List[str]] = None):
+    if note is None:
+        notes = []
+    elif isinstance(note, str):
+        notes = [note]
+    elif isinstance(note, list):
+        notes = [f"{el}" for el in note]
+    else:
+        raise TypeError(f"Expecting input 'note' to be a string or a list of strings but was {type(note)}.")
 
+    # create filename from current timestamp
+    filename = datetime.now().strftime("%Y%m%d_%H%M%S") + "_".join(notes)
+    # create full path (not necessarily absolute)
+    image_path = Path(folder) / filename
+    # save image
+    img.save(image_path.with_suffix(f".{image_extension.strip('.')}"))
+
+
+if __name__ == "__main__":
+    logger.debug("====> Starting uvicorn server <====")
     uvicorn.run(app=app, port=5050, log_level=logging.DEBUG)
