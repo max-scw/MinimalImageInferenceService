@@ -1,10 +1,9 @@
 import requests
 import urllib
-import re
 from timeit import default_timer
 
 
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Any
 import logging
 
 
@@ -33,8 +32,9 @@ def build_url(
     )
     # join dictionaries
     parameter = camera.dict() | settings.dict() | return_options.dict()
+
     # parameter
-    params = {ky: vl for ky, vl in parameter.items() if (vl is not None)}
+    params = {ky: vl for ky, vl in parameter.items() if (vl is not None) and (vl != "")}
     # build url
     return f"{address}?{urllib.parse.urlencode(params)}"
 
@@ -44,9 +44,10 @@ def request_backend(
         camera: CameraPhotoParameter,
         settings: SettingsMain,
         timeout: int = 1000
-) -> Union[bytes, None]:
+) -> Union[Dict[str, Any], None]:
 
     url = build_url(address, camera, settings)  # TODO: can be cached
+    logging.debug(f"Request backend: {url}")
 
     t0 = default_timer()
     response = requests.get(url=url, timeout=timeout)
