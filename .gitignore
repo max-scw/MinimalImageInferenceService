@@ -173,3 +173,6 @@ cython_debug/
 /FTP-Polling/
 
 */test.py
+/Backend/data/
+/Inference/data/
+/Frontend/data/

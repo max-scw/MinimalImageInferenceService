@@ -4,10 +4,9 @@ from fastapi.responses import Response, JSONResponse, StreamingResponse
 import uvicorn
 
 import numpy as np
-from datetime import datetime
 from pathlib import Path
-from PIL import Image
 import re
+
 
 import logging
 from timeit import default_timer
@@ -16,9 +15,9 @@ from threading import Thread
 # custom packages
 from plot_pil import plot_bboxs
 from check_boxes import check_boxes, get_patterns_from_config
-from helper_functions import image_to_base64, bytes_to_image
+from utils_image import image_to_base64, bytes_to_image, save_image
 
-from utils import get_config, get_dict_from_file_or_envs, set_env_variable
+from utils import get_config, read_mappings_from_csv, get_logging_level
 from utils_data_models import build_camera_info
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
@@ -35,13 +34,24 @@ from DataModels import (
 )
 from typing import Union, Tuple, List, Dict, Any, Optional
 
-set_env_variable("LOG_LEVEL", "DEBUG")  # FIXME
+# set logging level
+LOG_LEVEL = get_logging_level(default=logging.DEBUG)
+logging.getLogger().setLevel(LOG_LEVEL)
+
 # get config
 CONFIG = get_config()
+logging.debug(f"Configuration (CONFIG): {CONFIG}")
+
+# create camera object
 CAMERA = build_camera_info(CONFIG)
+# get patterns to check the model prediction
 PATTERNS, DEFAULT_PATTERN_KEY = get_patterns_from_config(CONFIG)
-COLOR_MAP = get_dict_from_file_or_envs(CONFIG, "MODEL_COLOR_MAP")
-CLASS_MAP = get_dict_from_file_or_envs(CONFIG, "MODEL_CLASS_MAP")
+# naming & colors for the (predicted) classes
+path_to_mapping = Path(CONFIG["MODEL_FOLDER_HEAD"]) / CONFIG["MODEL_FOLDER_DATA"] / (CONFIG["MODEL_MAPPINGS"] if "MODEL_MAPPINGS" in CONFIG else "")
+logging.debug(f"path_to_mapping={path_to_mapping}")
+CLASS_MAP, COLOR_MAP = read_mappings_from_csv(path_to_mapping)
+
+logging.debug(f"Default pattern key: {DEFAULT_PATTERN_KEY}, mapping classes: {CLASS_MAP}, mapping colors: {COLOR_MAP}")
 
 m = re.search("(?<=every\s)\d+", CONFIG["GENERAL_SAVE_IMAGES"], re.IGNORECASE)
 save_every_x = int(m.group()) if m else None
@@ -55,7 +65,10 @@ summary = "Minimalistic server providing a REST api to orchestrate a containeriz
 app = default_fastapi_setup(title, summary)
 
 # get logger
-logger = logging.getLogger("uvicorn")
+# logger = logging.getLogger("uvicorn")
+# logger.setLevel(get_logging_level())
+# logger.debug(f"Configuration (CONFIG): {CONFIG}")
+
 # initialize counter
 counter = 0
 
@@ -66,6 +79,10 @@ def main(
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
+    # get local logger + set logging level
+    logging.getLogger().setLevel(LOG_LEVEL)
+
+    t0 = default_timer()
     # create local CameraInfo instance
     camera_ = CameraInfo(url=CAMERA.url, **camera.dict())
     # update missing fields
@@ -73,32 +90,33 @@ def main(
         value = getattr(CAMERA, attr)
         if not hasattr(camera_, attr):
             setattr(camera_, attr, value)
+    t1 = default_timer()
+    logging.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
 
     # ----- Camera
-    logger.debug(f"Request camera: {camera_}")
     try:
-        t0 = default_timer()
         # trigger camera
-        img_bytes = trigger_camera(camera_, timeout=50000)
+        img_bytes = trigger_camera(camera_, timeout=1000)
+
         # log execution time
-        dt = default_timer() - t0
-        logger.debug(f"Trigger camera took {dt * 1000:.4g} ms")
+        t2 = default_timer()
+        logging.debug(f"Trigger camera took {(t2 - t1) * 1000:.4g} ms")
 
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: trigger_camera(...). Camera not responding."
-        logger.error(msg)
+        logging.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at camera backend: {e}"
-        logger.error(msg)
+        logging.error(msg)
         raise HTTPException(status_code=400, detail=msg)
 
+    t3 = default_timer()
     # ----- Inference backend
-    bboxes = [(0, 0, 0, 0)]
+    bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
     try:
         address = CONFIG["INFERENCE_URL"]
-        logger.debug(f"Request model inference backend at {address}")
-        t0 = default_timer()
+        logging.debug(f"Request model inference backend at {address}")
         result: ResultInference = request_model_inference(
             address=address,
             image_raw=img_bytes,
@@ -107,8 +125,8 @@ def main(
         bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
 
         # log execution time
-        dt = default_timer() - t0
-        logger.debug(f"Inference took {dt * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
+        t4 = default_timer()
+        logging.debug(f"Inference took {(t4 - t3) * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
         # to numpy
         scores = np.asarray(scores)
@@ -116,7 +134,8 @@ def main(
         scores = scores[lg].tolist()
         class_ids = np.asarray(class_ids)[lg].tolist()
         bboxes = np.asarray(bboxes)[lg].tolist()
-        logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score}.")
+        t5 = default_timer()
+        logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
         logger.error(msg)
@@ -125,11 +144,14 @@ def main(
         msg = f"Fatal error at inference backend: {e}"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
+
     # TODO: draw bounding-boxes on image? => Threading
-    # TODO: save images
+    t6 = default_timer()
 
     # img from bytes
     img = bytes_to_image(img_bytes)
+    t7 = default_timer()
+    logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 
     # ----- Plot bounding-boxes
     img_draw = plot_bboxs(
@@ -140,6 +162,9 @@ def main(
         class_map=CLASS_MAP,
         color_map=COLOR_MAP
     )
+    # log execution time
+    t8 = default_timer()
+    logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
 
     # ----- Check bounding-box pattern
     decision = None
@@ -175,20 +200,25 @@ def main(
             note_to_saved_image = "failed"
     else:
         logger.info("No pattern provided to check bounding-boxes.")
+    t9 = default_timer()
+    logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
 
     # save image
     global counter
     if note_to_saved_image or \
             (isinstance(CONFIG["GENERAL_SAVE_IMAGES"], str) and (CONFIG["GENERAL_SAVE_IMAGES"].lower() == "all")) or \
             (save_every_x and (counter % save_every_x == 0)):
-        Thread()
+        # start thread to save the image
         Thread(target=save_image,
-               args=(img,
-                     camera_.format,
-                     CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
-                     note_to_saved_image
-                     )
+               args=(
+                   img,
+                   camera_.format,
+                   CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
+                   note_to_saved_image
+               )
                ).start()
+    t10 = default_timer()
+    logging.debug(f"Starting thread to save image took {(t10 - t9) * 1000:.4g} ms")
 
     # ----- Return
     # thread_draw.join()
@@ -216,6 +246,9 @@ def main(
             content["results"]["class_ids"] = class_ids
         if return_options.scores:
             content["results"]["scores"] = scores
+
+    t11 = default_timer()
+    logging.debug(f"Building response took {(t11 - t10) * 1000:.4g} ms")
 
     # increase global counter
     counter += 1
@@ -267,24 +300,11 @@ def _check_pattern(
     return decision, pattern_name, lg
 
 
-def save_image(img: Image, image_extension: str, folder: str = None, note: Union[str, List[str]] = None):
-    if note is None:
-        notes = []
-    elif isinstance(note, str):
-        notes = [note]
-    elif isinstance(note, list):
-        notes = [f"{el}" for el in note]
-    else:
-        raise TypeError(f"Expecting input 'note' to be a string or a list of strings but was {type(note)}.")
-
-    # create filename from current timestamp
-    filename = datetime.now().strftime("%Y%m%d_%H%M%S") + "_".join(notes)
-    # create full path (not necessarily absolute)
-    image_path = Path(folder) / filename
-    # save image
-    img.save(image_path.with_suffix(f".{image_extension.strip('.')}"))
-
-
 if __name__ == "__main__":
+    # get logger
+    logger = logging.getLogger("uvicorn")
+    logger.setLevel(LOG_LEVEL)
+    logger.debug(f"logger.level={logger.level}")
+
     logger.debug("====> Starting uvicorn server <====")
-    uvicorn.run(app=app, port=5050, log_level=logging.DEBUG)
+    uvicorn.run(app=app, port=5050, log_level=LOG_LEVEL)

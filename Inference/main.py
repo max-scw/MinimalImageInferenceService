@@ -7,14 +7,16 @@ from pathlib import Path
 import onnxruntime as ort
 
 import logging
-import sys
 from timeit import default_timer
 
 # custom packages
-from utils import get_config, set_env_variable, get_logging_level
+from utils import get_config, get_logging_level
 from utils_fastapi import default_fastapi_setup
 from utils_image import scale_coordinates_to_image_size, prepare_image, image_from_bytes
-from DataModels import ResultInference
+
+# set logging level
+LOG_LEVEL = get_logging_level(default=logging.DEBUG)
+logging.getLogger().setLevel(LOG_LEVEL)
 
 # get config
 CONFIG = get_config()
@@ -30,7 +32,7 @@ ONNX_SESSION = ort.InferenceSession(path_to_model_file)
 
 # log input shapes
 input_shapes = {el.name: el.shape for el in ONNX_SESSION.get_inputs()}
-logging.info(f"Model input(s) {input_shapes}")
+logging.debug(f"Model input(s) {input_shapes}")
 
 # entry points
 ENTRYPOINT_INFERENCE = "/inference"
@@ -42,13 +44,11 @@ app = default_fastapi_setup(title, summary)
 
 
 @app.post(ENTRYPOINT_INFERENCE)
-async def predict(
-        image: UploadFile = File(...),
-        # response_model=ResultInference,
-):
-    logging.info(f"call {ENTRYPOINT_INFERENCE}")
-    logging.getLogger().setLevel(logging.DEBUG) # FIXME
-    logging.info(f"logging.level = {logging.getLogger().level}")
+async def predict(image: UploadFile = File(...)):
+    # get local logger + set logging level
+    logging.getLogger().setLevel(LOG_LEVEL)
+    logging.debug(f"call {ENTRYPOINT_INFERENCE}")
+
     if image.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
 
@@ -87,10 +87,10 @@ async def predict(
 
 if __name__ == "__main__":
     log_level = get_logging_level(default=logging.DEBUG)
-    print(f"Logging level: {log_level}")
     # get logger
     logger = logging.getLogger("uvicorn")
     logger.setLevel(log_level)
+    logger.debug(f"logger.level={logger.level}")
+
     logger.debug("====> Starting uvicorn server <====")
-    logger.debug(f"logger.level = {logger.level}")
     uvicorn.run(app=app, port=5052, log_level=log_level)
