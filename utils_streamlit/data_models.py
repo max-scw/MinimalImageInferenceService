@@ -10,4 +10,4 @@ class ImpressInfo(BaseModel):
     status: str
     date_up_since: datetime
     additional_info: Optional[dict] = None,
-    project_link: Optional[str] = "https://gitlab.com/schwmax/smartmicroservices"
+    project_link: Optional[str] = None
