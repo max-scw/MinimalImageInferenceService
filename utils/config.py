@@ -71,4 +71,5 @@ def get_config(default_prefix: str = "") -> dict:
 
     # set logging
     set_logging()
+    logging.debug(f"Configuration: {config}")
     return config

@@ -15,14 +15,18 @@ def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes,
     """
     wrapper
     """
+    t0 = default_timer()
     url = build_url(camera_info)
-    logger.debug(f"trigger_camera(): url={url}")
+    t1 = default_timer()
+    logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000} ms)")
 
-    return request_camera(url, timeout)
+    response = request_camera(url, timeout)
+    t2 = default_timer()
+    logger.debug(f"trigger_camera(): request_camera(url, timeout={timeout}) (took {(t2 - t1) * 1000} ms)")
+    return response
 
 
 def build_url(camera_info: CameraInfo) -> str:
-
     params = {ky: vl for ky, vl in camera_info.dict().items() if (vl is not None) and (ky in CameraPhotoParameter.model_fields)}
     # build url
     url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
@@ -34,9 +38,9 @@ def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
     t0 = default_timer()
     response = requests.get(url=address, timeout=timeout)
     status_code = response.status_code
-
+    t1 = default_timer()
     logger.info(
-        f"Requesting camera {address} took {(default_timer() - t0) / 1000:.2} ms. "
+        f"Requesting camera {address} took {(t1 - t0) * 1000:.4g} ms. "
         f"(Status code: {status_code})"
     )
 
@@ -53,6 +57,7 @@ def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
     elif 400 <= status_code < 600:
         # error
         raise Exception(f"Server returned status code {status_code} with message {response.text}")
+
     return content
 
 

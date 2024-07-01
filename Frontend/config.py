@@ -22,7 +22,7 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
 
 
 def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, SettingsMain, AppSettings]:
-    config = get_config(default_prefix="TI")
+    config = get_config()
     logging.info(f"App configuration: {config}")
 
     # impress
@@ -31,21 +31,21 @@ def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, Setti
         author=config["IMPRESS_AUTHOR"],
         status=config["IMPRESS_STATUS"],
         date_up_since=datetime.now(),
-        additional_info=config["IMPRESS_ADDITIONAL_INFO"],
+        additional_info=config["IMPRESS_ADDITIONAL_INFO"] if "IMPRESS_ADDITIONAL_INFO" in config else None,
         project_link=config["IMPRESS_PROJECT_LINK"]
     )
 
     camera_info = CameraPhotoParameter(
         # exposure_time_microseconds: Optional[int] = 10000
         # camera addresses
-        serial_number=config["CAMERA_SERIAL_NUMBER"],
+        serial_number=config["CAMERA_SERIAL_NUMBER"] if isinstance(config["CAMERA_SERIAL_NUMBER"], int) else None,
         ip_address=config["CAMERA_IP_ADDRESS"],
         subnet_mask=config["CAMERA_SUBNET_MASK"],
         # config
-        timeout=config["CAMERA_TIMEOUT"],
+        timeout=config["CAMERA_TIMEOUT"] if isinstance(config["CAMERA_TIMEOUT"], int) else None,
         transmission_type=config["CAMERA_TRANSMISSION_TYPE"],
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
-        destination_port=config["CAMERA_DESTINATION_PORT"],
+        destination_port=config["CAMERA_DESTINATION_PORT"] if isinstance(config["CAMERA_DESTINATION_PORT"], int) else None,
         # image
         format=config["CAMERA_IMAGE_FORMAT"],
         quality=config["CAMERA_IMAGE_QUALITY"],
@@ -59,51 +59,6 @@ def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, Setti
     if "GENERAL_PATTERN_KEY" in config:
         settings_backend.pattern_key = config["GENERAL_PATTERN_KEY"]
 
-    # folder_head = Path(config["MODEL_FOLDER_HEAD"])
-    # folder_data = Path(config["MODEL_FOLDER_DATA"])
-    #
-    # maps = dict()
-    # for ky in ["MODEL_CLASS_MAP", "MODEL_COLOR_MAP"]:
-    #     mapping = config[ky]
-    #
-    #     if mapping is None or mapping == "":
-    #         map_ = None
-    #     elif Path(mapping).suffix in (".yaml", ".yml"):
-    #         # if is YAML file:
-    #         # identify path to file
-    #         path_to_map = look_for_file(mapping, [folder_head, folder_data])
-    #         logging.info(f"configuration: {ky}. YAML file {path_to_map}.")
-    #         # read file
-    #         if path_to_map.is_file():
-    #             with open(path_to_map, "r") as fid:
-    #                 map_ = yaml.safe_load(fid)
-    #         else:
-    #             map_ = None
-    #     elif Path(mapping).suffix in (".txt", ".conf"):
-    #         # if is text file:
-    #         # identify path to file
-    #         path_to_map = look_for_file(mapping, [folder_head, folder_data])
-    #         logging.info(f"configuration: {ky}. Text file {path_to_map}.")
-    #         # read file
-    #         if path_to_map.is_file():
-    #             with open(path_to_map, "r") as fid:
-    #                 lines = fid.readlines()
-    #             map_ = {i: ln.strip() for i, ln in enumerate(lines) if len(ln) > 3}
-    #         else:
-    #             map_ = None
-    #     else:
-    #         # else is string
-    #         map_ = literal_eval(mapping)
-    #         if isinstance(map_, list):
-    #             # construct dictionary
-    #             map_ = {i: el for i, el in enumerate(map_)}
-    #     maps[ky] = map_
-    #
-    # model_info = ModelInfo(
-    #     # url=config["MODEL_URL"],
-    #     class_map=maps["MODEL_CLASS_MAP"],
-    #     color_map=maps["MODEL_COLOR_MAP"],
-    # )
 
     app_settings = AppSettings(
         address_backend=config["GENERAL_URL_BACKEND"],
