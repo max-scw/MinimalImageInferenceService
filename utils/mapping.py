@@ -1,9 +1,24 @@
 from pathlib import Path
 import yaml
+import csv
 from ast import literal_eval
 import logging
 
-from typing import Union, List, Dict, Any
+from typing import Union, List, Dict, Tuple, Any
+
+
+def read_mappings_from_csv(file: Union[str, Path], delimiter: str = ",") -> Tuple[Dict[int, str], Dict[int, str]]:
+    class_map, color_map = dict(), dict()
+
+    if isinstance(file, (str, Path)):
+        file = Path(file)
+        if file.is_file() and (file.suffix.lower() == ".csv"):
+            with open(file, newline="") as fid:
+                lines = list(csv.reader(fid, delimiter=delimiter))
+
+            class_map = {int(el[0]): el[1] for el in lines}
+            color_map = {int(el[0]): el[2] for el in lines if len(el) > 1}
+    return class_map, color_map
 
 
 def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
