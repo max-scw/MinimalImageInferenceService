@@ -90,7 +90,7 @@ def prepare_image(
 ) -> np.ndarray:
     msg = f"prepare_image({image.shape}, {shape}, {precision})"
     logging.debug(msg)
-    print("DEBUG: " + msg)
+
     # resize
     img_sml = letterbox(image, new_shape=shape, stride=32)[0]
     # move channels
@@ -151,8 +151,8 @@ def scale_coordinates_to_image_size(
     Returns:
         np.ndarray: Array of scaled bounding box coordinates.
     """
-    width_src, height_src = size_src
-    width_des, height_des = size_des
+    height_src, width_src = size_src
+    height_des, width_des = size_des
 
     # Calculate scaling factors
     scale_x = width_des / width_src
