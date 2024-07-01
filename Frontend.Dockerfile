@@ -31,16 +31,13 @@ COPY Frontend/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
 
 # Copy app into the container
+# 1. copy shated files
 ADD utils ./utils/
-ADD utils_streamlit ./utils_streamlit/
-COPY Frontend/* ./
+COPY utils_image.py DataModels.py README.md LICENSE ./
+# 2. copy individual files
+ADD Frontend/utils_streamlit ./utils_streamlit/
+COPY Frontend/app.py Frontend/communication.py Frontend/config.py Frontend/DataModelsFrontend.py Frontend/default_config.toml Frontend/entrypoint.sh ./
 
-
-
-# set to non-root user
-USER root
-RUN chown -R appuser:appuser /home/app
-#USER appuser
 
 # Expose the ports
 EXPOSE 8501
@@ -55,6 +52,11 @@ COPY Frontend/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set execute permissions for the entrypoint script
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# set to non-root user
+USER root
+RUN chown -R appuser:appuser /home/app
+USER appuser
 
 # Set the entrypoint script as the entrypoint for the container
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

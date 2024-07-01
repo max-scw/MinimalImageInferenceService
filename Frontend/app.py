@@ -1,21 +1,19 @@
 import streamlit as st
 import logging
-import numpy as np
 import sys
 from datetime import datetime
 
-# from streamlit_extras.stateful_button import button
 
 # custom packages
 from utils_streamlit import write_impress
-from utils_communication import request_backend
+from communication import request_backend
 from utils_image import save_image, resize_image, base64_to_image
-from utils import get_env_variable, cast_logging_level
+from utils import get_logging_level
 from config import get_config_from_environment_variables, get_page_title
 
 
 @st.cache_data
-def get_config():
+def get_frontend_config():
     return get_config_from_environment_variables()
 
 
@@ -113,15 +111,17 @@ def main():
     set_css_config()
 
     # load configs
-    camera_info, settings_backend, app_settings = get_config()
+    camera_info, settings_backend, app_settings = get_frontend_config()
 
     # initialize session state
     if "image" not in st.session_state:
         reset_session_state_image()
     if "show_bboxs" not in st.session_state:
         st.session_state.show_bboxs = False
-    if "buttons_disabled" not in st.session_state:
-        st.session_state.buttons_disabled = True
+    if "button_show_boxes_disabled" not in st.session_state:
+        st.session_state.button_show_boxes_disabled = True
+    if "button_overrule_disabled" not in st.session_state:
+        st.session_state.button_overrule_disabled = True
 
     # content
     if app_settings.title:
@@ -139,14 +139,14 @@ def main():
             use_container_width=True
         )
         if camera_triggered:
-            st.session_state.buttons_disabled = False
+            st.session_state.button_show_boxes_disabled = False
 
         for _ in range(10):
             st.text("")
         kwargs = {
             "label": "show boxes",
             # "help": "Toggles bounding-boxes.",
-            "disabled": st.session_state.buttons_disabled,
+            "disabled": st.session_state.button_show_boxes_disabled,
         }
 
         toggle_boxes = st.toggle(
@@ -164,7 +164,7 @@ def main():
             "Overrule decision",
             help="Flags the image as wrongly classified",
             type="secondary",
-            disabled=st.session_state.buttons_disabled or st.session_state.image["overruled"],
+            disabled=st.session_state.button_overrule_disabled or st.session_state.image["overruled"],
             use_container_width=True
         )
 
@@ -174,14 +174,14 @@ def main():
         if camera_triggered:
             reset_session_state_image()
             # call backend
-            response = request_backend(
-                address=app_settings.address_backend,
-                camera=camera_info,
-                settings=settings_backend,
-                timeout=app_settings.timeout
-            )
+            with st.spinner("Call backend to trigger the camera and evaluate the model ..."):
+                content = request_backend(
+                    address=app_settings.address_backend,
+                    camera=camera_info,
+                    settings=settings_backend,
+                    timeout=app_settings.timeout
+                )
 
-            content = response.json()
             # keep image in session state
             images = content["images"]
             image = base64_to_image(images["img"])
@@ -210,6 +210,7 @@ def main():
             msg = f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}"
             logging.debug(msg)
             st.success(msg, icon="✅")
+            st.session_state.button_overrule_disabled = False
         elif st.session_state.image["show"] is not None:
             if st.session_state.image["pattern_lg"] is not None:
                 msg = (f"Not all objects were found. "
@@ -218,6 +219,7 @@ def main():
                 st.error(msg, icon="🚨")
             else:
                 st.info("No pattern provided to check bounding-boxes.", icon="ℹ️")
+                st.session_state.button_overrule_disabled = True
 
     # show image
         img2show = st.session_state.image["bboxes"] if toggle_boxes else st.session_state.image["show"]
@@ -225,7 +227,7 @@ def main():
             st.image(img2show)
 
     # save image
-    if overrule_decision or (scores and (min(scores) < settings_backend.min_score)):
+    if overrule_decision:
         if st.session_state.image["path_to_saved_image"] is None:
             path_to_img = save_image(st.session_state.image["raw"], app_settings.data_folder)
             # keep filename in session state to prevent that the image is saved twice
@@ -244,7 +246,7 @@ def main():
 if __name__ == "__main__":
     # set logging level
     logging.basicConfig(
-        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.DEBUG)),
+        level=get_logging_level(default=logging.DEBUG),
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             # logging.FileHandler(Path(get_env_variable("LOGFILE", "log")).with_suffix(".log")),
