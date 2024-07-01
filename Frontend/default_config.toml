@@ -1,9 +1,13 @@
+prefix="FE"
+
+
 [impress]
 project_name="Unknown project name"
 author="Unknown author"
 status="Unknown status"
-additional_info=""
+#additional_info=""
 project_link=""
+
 
 [camera]
 exposure_time_microseconds=10000
@@ -15,23 +19,18 @@ timeout=""
 transmission_type=""
 destination_ip_address=""
 destination_port=""
-image_extension=".bmp"
+image_extension=".jpg"
 # debugging
 emulate_camera=false
+# image
+image_format="jpeg"
+image_quality=85
 
-[model]
-folder_head="/home/app/"
-folder_data="data/"
-class_map=""
-color_map=""
 
 [general]
 url_backend="http://backend:5050/main"
-file_type_save_image=".webp"
+#url_backend="http://localhost:5050/main"  # FIXME: for debugging
+file_type_save_image=".jpg"
 data_folder="./data"
 timeout=10000
-#file_box_pattern="../data/desired_coordinates.yml"
-#image_size=[640,544]
-#save_all_images=false
-#min_confidence=0.5  # set to 1 to save all images
-#pattern_key=
+

@@ -1,4 +1,4 @@
-
+prefix="BE"
 
 [inference]
 url="http://inference:5050/inference"
@@ -9,7 +9,7 @@ url="http://inference:5050/inference"
 url="http://camera-adapter:5050/basler/take-photo"
 #url="http://localhost:5051/basler/take-photo"
 
-serial_number=1
+serial_number=0
 ip_address="1.1.1.1"
 emulate_camera=true
 #serial_number=
@@ -22,3 +22,12 @@ emulate_camera=true
 #quality=75
 image_extension=".jpg"
 
+[model]
+folder_head="./"
+folder_data="data"
+mappings=""
+
+[general]
+save_images="all"  # literal: "all", "every x", "no"
+save_images_with_failed_pattern_check=true
+folder_saved_images="data"

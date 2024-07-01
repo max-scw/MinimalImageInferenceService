@@ -1,6 +1,9 @@
+prefix="IF"
+
 [model]
-#filename="yolov7-tiny.onnx"
 filename="model.onnx"
+#filename="20240626_CRU.onnx"
 folder_data="./data/"
 image_size=[544, 640]
 precision="fp32"
+#precision="fp16"
