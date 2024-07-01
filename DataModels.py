@@ -53,8 +53,8 @@ class CameraInfo(CameraPhotoParameter):
 
 # ----- Main
 class SettingsMain(BaseModel):
-    pattern_key: Optional[str] = None,
-    min_score: Optional[Annotated[float, Field(strict=True, le=1, ge=0)]] = 0.5,
+    pattern_key: Optional[str] = None
+    min_score: Optional[Annotated[float, Field(strict=False, le=1, ge=0)]] = 0.5
 
 
 class OptionsReturnValuesMain(BaseModel):
