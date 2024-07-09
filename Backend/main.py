@@ -138,11 +138,11 @@ def main(
         logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
-        logger.error(msg)
+        logging.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at inference backend: {e}"
-        logger.error(msg)
+        logging.error(msg)
         raise HTTPException(status_code=400, detail=msg)
 
     # TODO: draw bounding-boxes on image? => Threading
@@ -151,7 +151,7 @@ def main(
     # img from bytes
     img = bytes_to_image(img_bytes)
     t7 = default_timer()
-    logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
+    logging.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 
     # ----- Plot bounding-boxes
     img_draw = plot_bboxs(
@@ -164,7 +164,7 @@ def main(
     )
     # log execution time
     t8 = default_timer()
-    logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
+    logging.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
 
     # ----- Check bounding-box pattern
     decision = None
@@ -185,23 +185,23 @@ def main(
         )
         # log execution time
         dt = default_timer() - t0
-        logger.debug(f"Pattern check took {dt * 1000:.4g} ms")
+        logging.debug(f"Pattern check took {dt * 1000:.4g} ms")
 
         if decision:
             msg = f"Bounding-Boxes found for pattern {pattern_name}"
-            logger.info(msg)
+            logging.info(msg)
         elif pattern_name:
             msg = (f"Not all objects were found. "
                    f"Best pattern: {pattern_name} with {lg}.")
-            logger.warning(msg)
+            logging.warning(msg)
 
         # Save image if applicable
         if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
             note_to_saved_image = "failed"
     else:
-        logger.info("No pattern provided to check bounding-boxes.")
+        logging.info("No pattern provided to check bounding-boxes.")
     t9 = default_timer()
-    logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
+    logging.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
 
     # save image
     global counter
