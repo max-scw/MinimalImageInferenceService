@@ -124,7 +124,7 @@ def main(
             result: ResultInference = request_model_inference(
                 address=address,
                 image_raw=img_bytes,
-                extension=camera_.format
+                extension=photo_params.format
             )
             bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
 
