@@ -5,7 +5,7 @@ from pathlib import Path
 from typing_extensions import Annotated
 from typing import Optional, List, Dict, Tuple, Union, Literal
 
-from DataModels_BaslerCameraAdapter import PhotoParams
+from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
 
 
 # ----- Inference: NN-model
@@ -29,7 +29,7 @@ class ResultInference(BaseModel):
 
 
 # ----- Camera
-class CameraInfo(PhotoParams):
+class CameraInfo(BaslerCameraSettings):
     url: Union[str, Path]
 
 

@@ -6,7 +6,8 @@ from utils import get_config, get_env_variable
 from utils_streamlit import ImpressInfo
 # from utils_coordinates import load_yaml
 
-from DataModels import PhotoParams, SettingsMain
+from DataModels import SettingsMain
+from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
 from DataModelsFrontend import AppSettings
 
 from typing import Union, List, Tuple
@@ -21,7 +22,7 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
     return path
 
 
-def get_config_from_environment_variables() -> Tuple[PhotoParams, SettingsMain, AppSettings]:
+def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, PhotoParams, SettingsMain, AppSettings]:
     config = get_config()
     logging.info(f"App configuration: {config}")
 
@@ -35,20 +36,24 @@ def get_config_from_environment_variables() -> Tuple[PhotoParams, SettingsMain, 
         project_link=config["IMPRESS_PROJECT_LINK"]
     )
 
-    camera_info = PhotoParams(
-        # exposure_time_microseconds: Optional[int] = 10000
+    camera_info = BaslerCameraSettings(
         # camera addresses
         serial_number=config["CAMERA_SERIAL_NUMBER"] if isinstance(config["CAMERA_SERIAL_NUMBER"], int) else None,
         ip_address=config["CAMERA_IP_ADDRESS"],
         subnet_mask=config["CAMERA_SUBNET_MASK"],
         # camera communication
-        timeout=config["CAMERA_TIMEOUT"] if isinstance(config["CAMERA_TIMEOUT"], int) else None,
         transmission_type=config["CAMERA_TRANSMISSION_TYPE"],
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
         destination_port=config["CAMERA_DESTINATION_PORT"] if isinstance(config["CAMERA_DESTINATION_PORT"], int) else None,
         # camera general
         pixel_type=config["CAMERA_PIXEL_TYPE"] if "CAMERA_PIXEL_TYPE" in config else "Undefined",
         convert_to_format=config["CAMERA_CONVERT_TO_FORMAT"] if "CAMERA_CONVERT_TO_FORMAT" in config else "null",
+    )
+
+    photo_params = PhotoParams(
+        # exposure_time_microseconds: Optional[int] = 10000
+        # communication
+        timeout=config["CAMERA_TIMEOUT"] if isinstance(config["CAMERA_TIMEOUT"], int) else None,
         # image
         format=config["CAMERA_IMAGE_FORMAT"],
         quality=config["CAMERA_IMAGE_QUALITY"],
@@ -73,7 +78,7 @@ def get_config_from_environment_variables() -> Tuple[PhotoParams, SettingsMain, 
         image_size=config["GENERAL_IMAGE_SIZE"] if "GENERAL_IMAGE_SIZE" in config else None,
     )
 
-    return camera_info, settings_backend, app_settings
+    return camera_info, photo_params, settings_backend, app_settings
 
 
 def get_page_title(default_prefix: str = "") -> Union[str, None]:

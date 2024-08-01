@@ -3,7 +3,8 @@ import urllib.parse
 from timeit import default_timer
 import logging
 
-from DataModels import CameraInfo, CameraPhotoParameter, ResultInference
+from DataModels import CameraInfo, ResultInference
+from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
 
 from typing import Union, Dict, List
 
@@ -11,12 +12,12 @@ from typing import Union, Dict, List
 logger = logging.getLogger("uvicorn")
 
 
-def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes, None]:
+def trigger_camera(camera_info: CameraInfo, photo_params: PhotoParams, timeout: int = 1000) -> Union[bytes, None]:
     """
     wrapper
     """
     t0 = default_timer()
-    url = build_url(camera_info)
+    url = build_url(camera_info, photo_params)
     t1 = default_timer()
     logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000} ms)")
 
@@ -26,8 +27,13 @@ def trigger_camera(camera_info: CameraInfo, timeout: int = 1000) -> Union[bytes,
     return response
 
 
-def build_url(camera_info: CameraInfo) -> str:
-    params = {ky: vl for ky, vl in camera_info.dict().items() if (vl is not None) and (ky in CameraPhotoParameter.model_fields)}
+def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
+    params = {
+        ky: vl for ky, vl in camera_info.dict().items()
+        if (vl is not None) and (ky in BaslerCameraSettings.model_fields)
+    }
+    # merge with photo parameter
+    params |= photo_params
     # build url
     url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
     return url

@@ -24,7 +24,6 @@ from utils_fastapi import default_fastapi_setup
 
 from DataModels import (
     SettingsMain,
-    PhotoParams,
     CameraInfo,
     # ResultMain,
     OptionsReturnValuesMain,
@@ -32,6 +31,7 @@ from DataModels import (
     PatternRequest,
     Pattern
 )
+from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
 
 
 from typing import Union, Tuple, List, Dict, Any, Optional
@@ -77,7 +77,8 @@ counter = 0
 
 @app.get(ENTRYPOINT + "main")
 def main(
-        camera: PhotoParams = Depends(),
+        camera_params: BaslerCameraSettings = Depends(),
+        photo_params: PhotoParams = Depends(),
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
@@ -86,7 +87,7 @@ def main(
 
     t0 = default_timer()
     # create local CameraInfo instance
-    camera_ = CameraInfo(url=CAMERA.url, **camera.dict())
+    camera_ = CameraInfo(url=CAMERA.url, **camera_params.dict())
     # update missing fields
     for attr in CAMERA.__fields__:
         value = getattr(CAMERA, attr)
@@ -98,7 +99,7 @@ def main(
     # ----- Camera
     try:
         # trigger camera
-        img_bytes = trigger_camera(camera_, timeout=1000)
+        img_bytes = trigger_camera(camera_, photo_params, timeout=1000)
 
         # log execution time
         t2 = default_timer()
