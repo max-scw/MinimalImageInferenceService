@@ -111,7 +111,7 @@ def main():
     set_css_config()
 
     # load configs
-    camera_info, settings_backend, app_settings = get_frontend_config()
+    camera_info, photo_params, settings_backend, app_settings = get_frontend_config()
 
     # initialize session state
     if "image" not in st.session_state:
@@ -177,7 +177,8 @@ def main():
             with st.spinner("Call backend to trigger the camera and evaluate the model ..."):
                 content = request_backend(
                     address=app_settings.address_backend,
-                    camera=camera_info,
+                    camera_params=camera_info,
+                    photo_params=photo_params,
                     settings=settings_backend,
                     timeout=app_settings.timeout
                 )
