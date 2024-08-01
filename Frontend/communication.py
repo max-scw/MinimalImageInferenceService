@@ -7,12 +7,14 @@ from typing import Union, Dict, List, Any
 import logging
 
 
-from DataModels import CameraPhotoParameter, OptionsReturnValuesMain, SettingsMain
+from DataModels import OptionsReturnValuesMain, SettingsMain
+from DataModels_BaslerCameraAdapter import BaslerCameraSettings, PhotoParams
 
 
 def build_url(
         address: str,
-        camera: CameraPhotoParameter,
+        camera_params: BaslerCameraSettings,
+        photo_params: PhotoParams,
         settings: SettingsMain,
 ):
     # address
@@ -31,7 +33,7 @@ def build_url(
         scores=True,
     )
     # join dictionaries
-    parameter = camera.dict() | settings.dict() | return_options.dict()
+    parameter = camera_params.dict() | photo_params.dict() | settings.dict() | return_options.dict()
 
     # parameter
     params = {ky: vl for ky, vl in parameter.items() if (vl is not None) and (vl != "")}
@@ -44,12 +46,13 @@ def build_url(
 
 def request_backend(
         address: str,
-        camera: CameraPhotoParameter,
+        camera_params: BaslerCameraSettings,
+        photo_params: PhotoParams,
         settings: SettingsMain,
         timeout: int = 1000
 ) -> Union[Dict[str, Any], None]:
 
-    url = build_url(address, camera, settings)  # TODO: can be cached
+    url = build_url(address, camera_params, photo_params, settings)  # TODO: can be cached
     logging.debug(f"Request backend: {url}")
 
     t0 = default_timer()
