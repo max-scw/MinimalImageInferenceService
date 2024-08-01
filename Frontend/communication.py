@@ -38,7 +38,7 @@ def build_url(
     # parameter
     params = {ky: vl for ky, vl in parameter.items() if (vl is not None) and (vl != "")}
 
-    info = {ky: (vl, type(vl)) for ky, vl in params}
+    info = {ky: (vl, type(vl)) for ky, vl in params.items()}
     logging.debug(f"building URL for backend: {info}")
     # build url
     return f"{address}?{urllib.parse.urlencode(params)}"
