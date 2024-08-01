@@ -31,7 +31,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_fastapi.py DataModels.py README.md LICENSE ./
+COPY utils_fastapi.py DataModels.py DataModelsCamera.py README.md LICENSE ./
 # 2. copy individual files
 COPY Inference/main.py Inference/utils_image.py Inference/default_config.toml ./
 

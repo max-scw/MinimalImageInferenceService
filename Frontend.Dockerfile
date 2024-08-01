@@ -33,9 +33,9 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_image.py DataModels.py README.md LICENSE ./
+COPY utils_image.py DataModels.py DataModelsCamera.py README.md LICENSE ./
 # 2. copy individual files
-ADD Frontend/utils_streamlit ./utils_streamlit/
+ADD /utils_streamlit ./utils_streamlit/
 COPY Frontend/app.py Frontend/communication.py Frontend/config.py Frontend/DataModelsFrontend.py Frontend/default_config.toml Frontend/entrypoint.sh ./
 
 

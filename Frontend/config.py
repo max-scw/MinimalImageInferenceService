@@ -6,7 +6,7 @@ from utils import get_config, get_env_variable
 from utils_streamlit import ImpressInfo
 # from utils_coordinates import load_yaml
 
-from DataModels import CameraPhotoParameter, SettingsMain
+from DataModels import PhotoParams, SettingsMain
 from DataModelsFrontend import AppSettings
 
 from typing import Union, List, Tuple
@@ -21,7 +21,7 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
     return path
 
 
-def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, SettingsMain, AppSettings]:
+def get_config_from_environment_variables() -> Tuple[PhotoParams, SettingsMain, AppSettings]:
     config = get_config()
     logging.info(f"App configuration: {config}")
 
@@ -35,17 +35,20 @@ def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, Setti
         project_link=config["IMPRESS_PROJECT_LINK"]
     )
 
-    camera_info = CameraPhotoParameter(
+    camera_info = PhotoParams(
         # exposure_time_microseconds: Optional[int] = 10000
         # camera addresses
         serial_number=config["CAMERA_SERIAL_NUMBER"] if isinstance(config["CAMERA_SERIAL_NUMBER"], int) else None,
         ip_address=config["CAMERA_IP_ADDRESS"],
         subnet_mask=config["CAMERA_SUBNET_MASK"],
-        # config
+        # camera communication
         timeout=config["CAMERA_TIMEOUT"] if isinstance(config["CAMERA_TIMEOUT"], int) else None,
         transmission_type=config["CAMERA_TRANSMISSION_TYPE"],
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
         destination_port=config["CAMERA_DESTINATION_PORT"] if isinstance(config["CAMERA_DESTINATION_PORT"], int) else None,
+        # camera general
+        pixel_type=config["CAMERA_PIXEL_TYPE"] if "CAMERA_PIXEL_TYPE" in config else "Undefined",
+        convert_to_format=config["CAMERA_CONVERT_TO_FORMAT"] if "CAMERA_CONVERT_TO_FORMAT" in config else "null",
         # image
         format=config["CAMERA_IMAGE_FORMAT"],
         quality=config["CAMERA_IMAGE_QUALITY"],
@@ -58,7 +61,6 @@ def get_config_from_environment_variables() -> Tuple[CameraPhotoParameter, Setti
         settings_backend.min_score = config["GENERAL_MIN_CONFIDENCE"]
     if "GENERAL_PATTERN_KEY" in config:
         settings_backend.pattern_key = config["GENERAL_PATTERN_KEY"]
-
 
     app_settings = AppSettings(
         address_backend=config["GENERAL_URL_BACKEND"],

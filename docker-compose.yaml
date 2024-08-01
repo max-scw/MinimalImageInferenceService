@@ -1,11 +1,13 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.1.4
+    image: maxscw/baslercameraadapter:v0.2.20
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
+      - FRAMES_PER_SECOND=10
+      - PIXEL_TYPE=Mono8
     volumes:
       - ./testimages:/home/app/test
     ports:
@@ -41,55 +43,62 @@ services:
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
-      - INFERENCE_URL=http://inference:5050/inference
-      - CAMERA_URL=http://camera-adapter:5050/basler/take-photo
-#    volumes:
-#      - ./data:/home/app/data/:ro
+      - BE_INFERENCE_URL=http://inference:5050/inference
+      - BE_CAMERA_URL=http://camera-adapter:5050/basler/continuous-acquisition/get-image
+#      - BE_CAMERA_SERIAL_NUMBER0
+      - BE_CAMERA_IP_ADDRESS=
+      - BE_CAMERA_TRANSMISSION_TYPE=Multicast
+      - BE_CAMERA_DESTINATION_IP_ADDRESS=
+      - BE_CAMERA_DESTINATION_PORT=4600
+#      - BE_CAMERA_IMAGE_FORMAT=jpg
+#      - BE_CAMERA_IMAGE_QUALITY=75
+      - BE_CAMERA_EMULATE_CAMERA=true
+      # general
+      - BE_GENERAL_SAVE_IMAGES=all
+    volumes:
+      - ./data:/home/app/data/:rw
     ports:
       - 5000:5050  # external access port | only for debugging
 
-#  inference-frontend:
-#    container_name: frontend-streamlit
-#    build:
-#      context: ./
-#      dockerfile: Frontend.Dockerfile
-#    image: schwmax/toy-inference-frontend
-#    restart: unless-stopped
-#    environment:
-#      - TZ=Europe/Berlin
-#      # variables to customize container
-##      - PREFIX=TI
+  inference-frontend:
+    container_name: frontend-streamlit
+    build:
+      context: ./
+      dockerfile: Frontend.Dockerfile
+    image: schwmax/toy-inference-frontend
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      # variables to customize container
+#      - PREFIX=FE
+      # general configs
+      - FE_GENERAL_URL_BACKEND="http://backend:5050/main"
+#      -
 #      - TI_GENERAL_TITLE="MVE for object recognition"
 #      - TI_GENERAL_DESCRIPTION="loreipsum ..."
-#      # model
-#      - TI_MODEL_URL=http://backend-onnx:5050/inference
-##      - TI_MODEL_CLASS_MAP=
-#      - TI_MODEL_COLOR_MAP=colors.txt
-##      - TI_MODEL_IMAGE_SIZE=(544, 640)
-#      # camera
-##      - TI_CAMERA_URL=http://camera-adapter:5050/test/image
-#      - TI_CAMERA_URL=http://camera-adapter:5050/basler/take-photo
-##      - TI_CAMERA_SERIAL_NUMBER=24339728
-#      - TI_CAMERA_IP_ADDRESS=192.168.10.5
-##      - TI_CAMERA_TIMEOUT
-#      - TI_CAMERA_TRANSMISSION_TYPE=Multicast
-#      - TI_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.221
-#      - TI_CAMERA_DESTINATION_PORT=46000
-#      - TI_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
-#      - TI_CAMERA_IMAGE_EXTENSION=.wbp
-#      # impress
-#      - TI_IMPRESS_PROJECT_NAME="Minimal Inference"
-#      - TI_IMPRESS_AUTHOR=SCHWMAX
-##      - TI_IMPRESS_STATUS
-##      - TI_IMPRESS_ADDITIONAL_INFO
-#      - TI_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalInferenceUI.git
-#      # general configs
-#      - TI_GENERAL_IMAGE_SIZE=(272, 320)
-#      # streamlit
-#      - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
-#    volumes:
-#      # mount folder to save images to
-#      - ./data/:/home/app/data/:rw
-#    ports:
-#      - 5006:8501  # external access port
+      # camera
+#      - FE_CAMERA_SERIAL_NUMBER=0
+      - FE_CAMERA_IP_ADDRESS=192.168.10.5
+      - FE_CAMERA_SUBNET_MASK=255.255.255.0
+      - FE_CAMERA_TRANSMISSION_TYPE=Multicast
+      - FE_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.223
+      - FE_CAMERA_DESTINATION_PORT=46000
+#      - FE_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
+      - FE_CAMERA_IMAGE_EXTENSION=.jpg
+      - FE_CAMERA_IMAGE_FORMAT=jpeg
+      - FE_CAMERA_IMAGE_QUALITY=75
+      # impress
+      - FE_IMPRESS_PROJECT_NAME="Minimal Inference"
+      - FE_IMPRESS_AUTHOR=SCHWMAX
+#      - TI_IMPRESS_STATUS
+#      - TI_IMPRESS_ADDITIONAL_INFO
+      - FE_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalImageInferenceService.git
+
+      # streamlit
+      - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
+    volumes:
+      # mount folder to save images to
+      - ./data/:/home/app/data/:rw
+    ports:
+      - 5001:8501  # external access port
 

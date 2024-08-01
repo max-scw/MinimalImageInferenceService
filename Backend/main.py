@@ -24,7 +24,7 @@ from utils_fastapi import default_fastapi_setup
 
 from DataModels import (
     SettingsMain,
-    CameraPhotoParameter,
+    PhotoParams,
     CameraInfo,
     # ResultMain,
     OptionsReturnValuesMain,
@@ -32,6 +32,8 @@ from DataModels import (
     PatternRequest,
     Pattern
 )
+
+
 from typing import Union, Tuple, List, Dict, Any, Optional
 
 # set logging level
@@ -75,7 +77,7 @@ counter = 0
 
 @app.get(ENTRYPOINT + "main")
 def main(
-        camera: CameraPhotoParameter = Depends(),
+        camera: PhotoParams = Depends(),
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
@@ -116,26 +118,27 @@ def main(
     bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
     try:
         address = CONFIG["INFERENCE_URL"]
-        logging.debug(f"Request model inference backend at {address}")
-        result: ResultInference = request_model_inference(
-            address=address,
-            image_raw=img_bytes,
-            extension=camera_.format
-        )
-        bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
+        if address:
+            logging.debug(f"Request model inference backend at {address}")
+            result: ResultInference = request_model_inference(
+                address=address,
+                image_raw=img_bytes,
+                extension=camera_.format
+            )
+            bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
 
-        # log execution time
-        t4 = default_timer()
-        logging.debug(f"Inference took {(t4 - t3) * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
+            # log execution time
+            t4 = default_timer()
+            logging.debug(f"Inference took {(t4 - t3) * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
-        # to numpy
-        scores = np.asarray(scores)
-        lg = scores >= settings.min_score
-        scores = scores[lg].tolist()
-        class_ids = np.asarray(class_ids)[lg].tolist()
-        bboxes = np.asarray(bboxes)[lg].tolist()
-        t5 = default_timer()
-        logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
+            # to numpy
+            scores = np.asarray(scores)
+            lg = scores >= settings.min_score
+            scores = scores[lg].tolist()
+            class_ids = np.asarray(class_ids)[lg].tolist()
+            bboxes = np.asarray(bboxes)[lg].tolist()
+            t5 = default_timer()
+            logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
         logging.error(msg)
