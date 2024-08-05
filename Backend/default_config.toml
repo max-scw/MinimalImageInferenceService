@@ -6,21 +6,22 @@ url="http://inference:5050/inference"
 
 
 [camera]
-url="http://camera-adapter:5050/basler/take-photo"
-#url="http://localhost:5051/basler/take-photo"
+url="http://camera-adapter:5050/basler/single-frame-acquisition/take-photo"
+#url="http://localhost:5051/basler/single-frame-acquisition/take-photo"
 
 serial_number=0
 ip_address="1.1.1.1"
 emulate_camera=true
-#serial_number=
-#ip_address=
-#timeout=
 #transmission_type=
 #destination_ip_address=
 #destination_port=
+#timeout=
+image_extension=".jpg"
+#pixel_format="Mono"
+
+[image]
 #format="jpg"
 #quality=75
-image_extension=".jpg"
 
 [model]
 folder_head="./"
