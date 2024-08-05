@@ -216,7 +216,7 @@ def main(
         Thread(target=save_image,
                args=(
                    img,
-                   camera_.format,
+                   photo_params.format,
                    CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
                    note_to_saved_image
                )
