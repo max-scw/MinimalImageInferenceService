@@ -60,7 +60,15 @@ def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, Photo
         # debugging
         emulate_camera=config["CAMERA_EMULATE_CAMERA"] if config["CAMERA_EMULATE_CAMERA"] else False
     )
+    # set exposure time if environment variable exists and has a valid format
+    exposure_time_microseconds = None
+    for ky in ["CAMERA_EXPOSURE_TIME", "CAMERA_EXPOSURE_TIME_MICROSECONDS"]:
+        if (ky in config) and isinstance(config[ky], int):
+            exposure_time_microseconds = config[ky]
+    if exposure_time_microseconds:
+        photo_params.exposure_time = exposure_time_microseconds
 
+    # general settings
     settings_backend = SettingsMain()
     if "GENERAL_MIN_CONFIDENCE" in config:
         settings_backend.min_score = config["GENERAL_MIN_CONFIDENCE"]
