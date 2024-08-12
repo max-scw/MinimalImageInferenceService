@@ -7,7 +7,7 @@ from typing import Tuple, Dict, Any, Union
 
 def build_camera_info(config: Dict[str, Any]) -> CameraInfo:
 
-    return CameraInfo(
+    camera_info = CameraInfo(
         url=config["CAMERA_URL"],
         # exposure_time_microseconds: Optional[int] = 10000
         # camera addresses
@@ -23,3 +23,13 @@ def build_camera_info(config: Dict[str, Any]) -> CameraInfo:
         # debugging
         emulate_camera=config["CAMERA_EMULATE_CAMERA"] if config["CAMERA_EMULATE_CAMERA"] else False
     )
+
+    # set exposure time if environment variable exists and has a valid format
+    exposure_time_microseconds = None
+    for ky in ["CAMERA_EXPOSURE_TIME", "CAMERA_EXPOSURE_TIME_MICROSECONDS"]:
+        if (ky in config) and isinstance(config[ky], int):
+            exposure_time_microseconds = config[ky]
+    if exposure_time_microseconds:
+        camera_info.exposure_time = exposure_time_microseconds
+
+    return camera_info
