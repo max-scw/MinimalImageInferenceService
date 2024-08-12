@@ -1,13 +1,24 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.2.20
+    image: maxscw/baslercameraadapter:v0.4.1
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
       - FRAMES_PER_SECOND=10
+      - ACQUISITION_MODE=Continuous
+
+      - TRANSMISSION_TYPE=Multicast
+      - DESTINATION_PORT=46000
+
+      - CONVERT_TO_FORMAT=RGB
       - PIXEL_TYPE=Mono8
+
+      - EXPOSURE_TIME=6000
+      - TIMEOUT=2000
+      - IMAGE_FORMAT=jpeg
+      - IMAGE_QUALITY=100
     volumes:
       - ./testimages:/home/app/test
     ports:
@@ -43,16 +54,10 @@ services:
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
-      - BE_INFERENCE_URL=http://inference:5050/inference
-      - BE_CAMERA_URL=http://camera-adapter:5050/basler/continuous-acquisition/get-image
-#      - BE_CAMERA_SERIAL_NUMBER0
-      - BE_CAMERA_IP_ADDRESS=
-      - BE_CAMERA_TRANSMISSION_TYPE=Multicast
-      - BE_CAMERA_DESTINATION_IP_ADDRESS=
-      - BE_CAMERA_DESTINATION_PORT=4600
-#      - BE_CAMERA_IMAGE_FORMAT=jpg
-#      - BE_CAMERA_IMAGE_QUALITY=75
-      - BE_CAMERA_EMULATE_CAMERA=true
+#      - BE_INFERENCE_URL=http://inference:5050/inference
+#      - BE_CAMERA_URL=http://camera-adapter:5050/basler/continuous-acquisition/get-image
+      - BE_CAMERA_URL=http://camera-adapter:5050/basler/single-frame-acquisition/take-photo
+#      - BE_CAMERA_*
       # general
       - BE_GENERAL_SAVE_IMAGES=all
     volumes:
@@ -65,7 +70,7 @@ services:
     build:
       context: ./
       dockerfile: Frontend.Dockerfile
-    image: schwmax/toy-inference-frontend
+    image: schwmax/frontend
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -83,10 +88,9 @@ services:
       - FE_CAMERA_TRANSMISSION_TYPE=Multicast
       - FE_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.223
       - FE_CAMERA_DESTINATION_PORT=46000
-#      - FE_CAMERA_EMULATE_CAMERA=True  # <<===== EMULATE CAMERA FOR DEMONSTRATION
       - FE_CAMERA_IMAGE_EXTENSION=.jpg
       - FE_CAMERA_IMAGE_FORMAT=jpeg
-      - FE_CAMERA_IMAGE_QUALITY=75
+      - FE_CAMERA_IMAGE_QUALITY=100
       # impress
       - FE_IMPRESS_PROJECT_NAME="Minimal Inference"
       - FE_IMPRESS_AUTHOR=SCHWMAX
@@ -102,3 +106,13 @@ services:
     ports:
       - 5001:8501  # external access port
 
+  # ----- MONITORING -----
+  prometheus-db-service:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus  # Persistent storage for Prometheus data
+    ports:
+      - 5007:9090
+    depends_on:
+      - basler-camera-service

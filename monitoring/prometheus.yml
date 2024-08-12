@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+ - job_name: basler-camera
+   static_configs:
+    - targets:
+       - camera-adapter:5050
