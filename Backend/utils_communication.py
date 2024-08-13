@@ -12,7 +12,11 @@ from typing import Union, Dict, List
 logger = logging.getLogger("uvicorn")
 
 
-def trigger_camera(camera_info: CameraInfo, photo_params: PhotoParams, timeout: int = 1000) -> Union[bytes, None]:
+def trigger_camera(
+        camera_info: CameraInfo,
+        photo_params: PhotoParams,
+        timeout: int = 1000
+) -> Union[bytes, None]:
     """
     wrapper
     """
@@ -70,7 +74,8 @@ def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
 def request_model_inference(
         address: str,
         image_raw: bytes,
-        extension: str
+        extension: str,
+        timeout: int = 1000
 ) -> ResultInference:
 
     logger.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
@@ -80,7 +85,7 @@ def request_model_inference(
     content = {"image": (f"image.{ext}", image_raw, f"image/{ext}")}
 
     t0 = default_timer()
-    response = requests.post(address, files=content)
+    response = requests.post(address, files=content, timeout=timeout)
     status_code = response.status_code
 
     logger.info(

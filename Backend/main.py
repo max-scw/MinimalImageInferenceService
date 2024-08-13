@@ -18,7 +18,8 @@ from check_boxes import check_boxes, get_patterns_from_config
 from utils_image import image_to_base64, bytes_to_image, save_image
 
 from utils import get_config, read_mappings_from_csv, get_logging_level
-from utils_data_models import build_camera_info
+# from utils_data_models import get_camerainfo_parameter_from_config
+# from utils_config_to_data_model import get_photo_parameter_from_config
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
 
@@ -44,8 +45,9 @@ logging.getLogger().setLevel(LOG_LEVEL)
 CONFIG = get_config()
 logging.debug(f"Configuration (CONFIG): {CONFIG}")
 
-# create camera object
-CAMERA = build_camera_info(CONFIG)
+# create camera
+# CAMERA_INFO = get_camerainfo_parameter_from_config(CONFIG)
+# PHOTO_PARAMS = get_photo_parameter_from_config(CONFIG)
 # get patterns to check the model prediction
 PATTERNS, DEFAULT_PATTERN_KEY = get_patterns_from_config(CONFIG)
 # naming & colors for the (predicted) classes
@@ -66,11 +68,6 @@ title = "Backend"
 summary = "Minimalistic server providing a REST api to orchestrate a containerized computer vision application."
 app = default_fastapi_setup(title, summary)
 
-# get logger
-# logger = logging.getLogger("uvicorn")
-# logger.setLevel(get_logging_level())
-# logger.debug(f"Configuration (CONFIG): {CONFIG}")
-
 # initialize counter
 counter = 0
 
@@ -87,19 +84,19 @@ def main(
 
     t0 = default_timer()
     # create local CameraInfo instance
-    camera_ = CameraInfo(url=CAMERA.url, **camera_params.dict())
-    # update missing fields
-    for attr in CAMERA.__fields__:
-        value = getattr(CAMERA, attr)
-        if not hasattr(camera_, attr):
-            setattr(camera_, attr, value)
+    camera_ = CameraInfo(**camera_params.dict())
+    # # update missing fields
+    # for attr in CAMERA_INFO.__fields__:
+    #     value = getattr(CAMERA_INFO, attr)
+    #     if not hasattr(camera_, attr):
+    #         setattr(camera_, attr, value)
     t1 = default_timer()
     logging.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
 
     # ----- Camera
     try:
         # trigger camera
-        img_bytes = trigger_camera(camera_, photo_params, timeout=1000)
+        img_bytes = trigger_camera(camera_, photo_params, timeout=1000)  # FIXME: adjust timeout
 
         # log execution time
         t2 = default_timer()
