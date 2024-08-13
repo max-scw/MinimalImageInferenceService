@@ -1,10 +1,13 @@
 import requests
 import urllib.parse
 from timeit import default_timer
-import logging
 
 from DataModels import CameraInfo, ResultInference
-from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
+from DataModels_BaslerCameraAdapter import (
+    PhotoParams,
+    BaslerCameraSettings,
+    get_not_none_values
+)
 from utils import setup_logging
 
 from typing import Union, Dict, List
@@ -35,8 +38,8 @@ def trigger_camera(
 
 def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
     params = {
-        ky: vl for ky, vl in camera_info.dict().items()
-        if (vl is not None) and (ky in BaslerCameraSettings.model_fields)
+        ky: vl for ky, vl in get_not_none_values(camera_info).items()
+        if ky in BaslerCameraSettings.model_fields
     }
     # merge with photo parameter
     params |= photo_params
