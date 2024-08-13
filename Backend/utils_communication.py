@@ -5,11 +5,13 @@ import logging
 
 from DataModels import CameraInfo, ResultInference
 from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
+from utils import setup_logging
 
 from typing import Union, Dict, List
 
 
-logger = logging.getLogger("uvicorn")
+# Setup logging
+logger = setup_logging(__name__)
 
 
 def trigger_camera(
