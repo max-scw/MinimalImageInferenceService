@@ -46,7 +46,7 @@ def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, Photo
         destination_ip_address=config["CAMERA_DESTINATION_IP_ADDRESS"],
         destination_port=config["CAMERA_DESTINATION_PORT"] if isinstance(config["CAMERA_DESTINATION_PORT"], int) else None,
         # camera general
-        pixel_type=config["CAMERA_PIXEL_TYPE"] if "CAMERA_PIXEL_TYPE" in config else "Undefined",
+        pixel_format=config["CAMERA_PIXEL_TYPE"] if "CAMERA_PIXEL_TYPE" in config else "Undefined",
         convert_to_format=config["CAMERA_CONVERT_TO_FORMAT"] if "CAMERA_CONVERT_TO_FORMAT" in config else "null",
     )
 
@@ -66,7 +66,7 @@ def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, Photo
         if (ky in config) and isinstance(config[ky], int):
             exposure_time_microseconds = config[ky]
     if exposure_time_microseconds:
-        photo_params.exposure_time = exposure_time_microseconds
+        photo_params.exposure_time_microseconds = exposure_time_microseconds
 
     # general settings
     settings_backend = SettingsMain()
