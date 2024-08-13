@@ -17,45 +17,43 @@ from plot_pil import plot_bboxs
 from check_boxes import check_boxes, get_patterns_from_config
 from utils_image import image_to_base64, bytes_to_image, save_image
 
-from utils import get_config, read_mappings_from_csv, get_logging_level
-# from utils_data_models import get_camerainfo_parameter_from_config
-# from utils_config_to_data_model import get_photo_parameter_from_config
+from utils import get_config, read_mappings_from_csv, setup_logging
+
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup
 
 from DataModels import (
     SettingsMain,
     CameraInfo,
-    # ResultMain,
     OptionsReturnValuesMain,
     ResultInference,
     PatternRequest,
-    Pattern
+    Pattern,
 )
-from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
+from DataModels_BaslerCameraAdapter import (
+    PhotoParams,
+    BaslerCameraSettings,
+    get_not_none_values
+)
 
 
 from typing import Union, Tuple, List, Dict, Any, Optional
 
-# set logging level
-LOG_LEVEL = get_logging_level(default=logging.DEBUG)
-logging.getLogger().setLevel(LOG_LEVEL)
+# Setup logging
+logger = setup_logging(__name__)
 
 # get config
 CONFIG = get_config()
-logging.debug(f"Configuration (CONFIG): {CONFIG}")
+logger.debug(f"Configuration (CONFIG): {CONFIG}")
 
-# create camera
-# CAMERA_INFO = get_camerainfo_parameter_from_config(CONFIG)
-# PHOTO_PARAMS = get_photo_parameter_from_config(CONFIG)
 # get patterns to check the model prediction
 PATTERNS, DEFAULT_PATTERN_KEY = get_patterns_from_config(CONFIG)
 # naming & colors for the (predicted) classes
 path_to_mapping = Path(CONFIG["MODEL_FOLDER_HEAD"]) / CONFIG["MODEL_FOLDER_DATA"] / (CONFIG["MODEL_MAPPINGS"] if "MODEL_MAPPINGS" in CONFIG else "")
-logging.debug(f"path_to_mapping={path_to_mapping}")
+logger.debug(f"path_to_mapping={path_to_mapping}")
 CLASS_MAP, COLOR_MAP = read_mappings_from_csv(path_to_mapping)
 
-logging.debug(f"Default pattern key: {DEFAULT_PATTERN_KEY}, mapping classes: {CLASS_MAP}, mapping colors: {COLOR_MAP}")
+logger.debug(f"Default pattern key: {DEFAULT_PATTERN_KEY}, mapping classes: {CLASS_MAP}, mapping colors: {COLOR_MAP}")
 
 m = re.search("(?<=every\s)\d+", CONFIG["GENERAL_SAVE_IMAGES"], re.IGNORECASE)
 save_every_x = int(m.group()) if m else None
@@ -79,19 +77,12 @@ def main(
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
-    # get local logger + set logging level
-    logging.getLogger().setLevel(LOG_LEVEL)
-
     t0 = default_timer()
     # create local CameraInfo instance
-    camera_ = CameraInfo(**camera_params.dict())
-    # # update missing fields
-    # for attr in CAMERA_INFO.__fields__:
-    #     value = getattr(CAMERA_INFO, attr)
-    #     if not hasattr(camera_, attr):
-    #         setattr(camera_, attr, value)
+    camera_ = CameraInfo(url=CONFIG["CAMERA_URL"], **camera_params.dict())
+
     t1 = default_timer()
-    logging.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
+    logger.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
 
     # ----- Camera
     try:
@@ -100,15 +91,15 @@ def main(
 
         # log execution time
         t2 = default_timer()
-        logging.debug(f"Trigger camera took {(t2 - t1) * 1000:.4g} ms")
+        logger.debug(f"Trigger camera took {(t2 - t1) * 1000:.4g} ms")
 
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: trigger_camera(...). Camera not responding."
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at camera backend: {e}"
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
 
     t3 = default_timer()
@@ -117,7 +108,7 @@ def main(
     try:
         address = CONFIG["INFERENCE_URL"]
         if address:
-            logging.debug(f"Request model inference backend at {address}")
+            logger.debug(f"Request model inference backend at {address}")
             result: ResultInference = request_model_inference(
                 address=address,
                 image_raw=img_bytes,
@@ -127,7 +118,7 @@ def main(
 
             # log execution time
             t4 = default_timer()
-            logging.debug(f"Inference took {(t4 - t3) * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
+            logger.debug(f"Inference took {(t4 - t3) * 1000:.4g} ms; # bounding-boxes={len(bboxes)}")
 
             # to numpy
             scores = np.asarray(scores)
@@ -136,14 +127,14 @@ def main(
             class_ids = np.asarray(class_ids)[lg].tolist()
             bboxes = np.asarray(bboxes)[lg].tolist()
             t5 = default_timer()
-            logging.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
+            logger.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: Inference backend not responding."
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
         msg = f"Fatal error at inference backend: {e}"
-        logging.error(msg)
+        logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
 
     # TODO: draw bounding-boxes on image? => Threading
@@ -152,7 +143,7 @@ def main(
     # img from bytes
     img = bytes_to_image(img_bytes)
     t7 = default_timer()
-    logging.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
+    logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 
     # ----- Plot bounding-boxes
     img_draw = plot_bboxs(
@@ -165,7 +156,7 @@ def main(
     )
     # log execution time
     t8 = default_timer()
-    logging.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
+    logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
 
     # ----- Check bounding-box pattern
     decision = None
@@ -186,23 +177,23 @@ def main(
         )
         # log execution time
         dt = default_timer() - t0
-        logging.debug(f"Pattern check took {dt * 1000:.4g} ms")
+        logger.debug(f"Pattern check took {dt * 1000:.4g} ms")
 
         if decision:
             msg = f"Bounding-Boxes found for pattern {pattern_name}"
-            logging.info(msg)
+            logger.info(msg)
         elif pattern_name:
             msg = (f"Not all objects were found. "
                    f"Best pattern: {pattern_name} with {lg}.")
-            logging.warning(msg)
+            logger.warning(msg)
 
         # Save image if applicable
         if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
             note_to_saved_image = "failed"
     else:
-        logging.info("No pattern provided to check bounding-boxes.")
+        logger.info("No pattern provided to check bounding-boxes.")
     t9 = default_timer()
-    logging.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
+    logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
 
     # save image
     global counter
@@ -219,7 +210,7 @@ def main(
                )
                ).start()
     t10 = default_timer()
-    logging.debug(f"Starting thread to save image took {(t10 - t9) * 1000:.4g} ms")
+    logger.debug(f"Starting thread to save image took {(t10 - t9) * 1000:.4g} ms")
 
     # ----- Return
     # thread_draw.join()
@@ -249,7 +240,7 @@ def main(
             content["results"]["scores"] = scores
 
     t11 = default_timer()
-    logging.debug(f"Building response took {(t11 - t10) * 1000:.4g} ms")
+    logger.debug(f"Building response took {(t11 - t10) * 1000:.4g} ms")
 
     # increase global counter
     counter += 1
@@ -302,10 +293,9 @@ def _check_pattern(
 
 
 if __name__ == "__main__":
-    # get logger
-    logger = logging.getLogger("uvicorn")
-    logger.setLevel(LOG_LEVEL)
-    logger.debug(f"logger.level={logger.level}")
-
-    logger.debug("====> Starting uvicorn server <====")
-    uvicorn.run(app=app, port=5050, log_level=LOG_LEVEL)
+    uvicorn.run(
+        app=app,
+        port=5050,
+        access_log=True,
+        log_config=None  # Uses the logging configuration in the application
+    )

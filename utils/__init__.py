@@ -5,7 +5,8 @@ from .env_vars import (
     default_from_env,
     cast_logging_level,
     set_env_variable,
-    get_logging_level
+    get_logging_level,
+    setup_logging
 )
 
 # config
