@@ -1,7 +1,7 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.4.1
+    image: maxscw/baslercameraadapter:v0.4.3
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -91,6 +91,8 @@ services:
       - FE_CAMERA_IMAGE_EXTENSION=.jpg
       - FE_CAMERA_IMAGE_FORMAT=jpeg
       - FE_CAMERA_IMAGE_QUALITY=100
+#      - FE_CAMERA_PIXEL_TYPE=BayerRG8
+#      - FE_CAMERA_CONVERT_TO_FORMAT=RGB
       # impress
       - FE_IMPRESS_PROJECT_NAME="Minimal Inference"
       - FE_IMPRESS_AUTHOR=SCHWMAX
@@ -116,3 +118,6 @@ services:
       - 5007:9090
     depends_on:
       - basler-camera-service
+
+volumes:
+  prometheus_data:
