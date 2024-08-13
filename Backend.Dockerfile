@@ -31,9 +31,22 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_fastapi.py utils_image.py DataModels.py DataModels_BaslerCameraAdapter.py README.md LICENSE ./
+COPY utils_fastapi.py \
+     utils_image.py \
+     DataModels.py \
+     DataModels_BaslerCameraAdapter.py \
+     utils_config.py  \
+     README.md \
+     LICENSE \
+     ./
 # 2. copy individual files
-COPY Backend/main.py Backend/default_config.toml Backend/utils_communication.py Backend/utils_data_models.py Backend/plot_pil.py Backend/check_boxes.py ./
+COPY Backend/main.py \
+     Backend/default_config.toml \
+     Backend/utils_communication.py \
+     Backend/utils_data_models.py \
+     Backend/plot_pil.py \
+     Backend/check_boxes.py \
+     ./
 
 
 # set to non-root user
