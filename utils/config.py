@@ -2,9 +2,6 @@ from pathlib import Path
 import tomllib
 import re
 
-import logging
-import sys
-
 from typing import Union
 
 from utils import (
