@@ -71,9 +71,20 @@ app = default_fastapi_setup(title, summary)
 
 
 # set up /metrics endpoint for prometheus
-EXECUTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
+EXECUTION_COUNTER, EXCEPTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
     app,
     entrypoints_to_track=[ENTRYPOINT_MAIN, ENTRYPOINT_CHECK_PATTERN]
+)
+DECISION = {
+    vl: Counter(
+        name=f"pattern_check_decision_{vl}".lower(),
+        documentation=f"Counts how often the decision of a pattern check was {vl}."
+    )
+    for vl in [True, False]
+}
+SAVED_IMAGES = Counter(
+            name="images_saved",
+            documentation="Counts many images were saved."
 )
 
 
@@ -83,6 +94,7 @@ counter = 0
 
 @app.get(ENTRYPOINT_MAIN)
 @EXECUTION_TIMING[ENTRYPOINT_MAIN].time()
+@EXCEPTION_COUNTER[ENTRYPOINT_MAIN].count_exceptions()
 def main(
         camera_params: BaslerCameraSettings = Depends(),
         photo_params: PhotoParams = Depends(),
@@ -224,6 +236,8 @@ def main(
                    note_to_saved_image
                )
                ).start()
+        # update metric
+        SAVED_IMAGES.inc()
     t10 = default_timer()
     logger.debug(f"Starting thread to save image took {(t10 - t9) * 1000:.4g} ms")
 
@@ -264,6 +278,7 @@ def main(
 
 @app.post(ENTRYPOINT_CHECK_PATTERN)
 @EXECUTION_TIMING[ENTRYPOINT_CHECK_PATTERN].time()
+@EXCEPTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].count_exceptions()
 async def check_pattern(request: PatternRequest):
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].inc()
@@ -308,6 +323,8 @@ def _check_pattern(
 
     # output
     decision = (len(lg) > 1) and all(lg)
+    # increment counter for custom metric
+    DECISION[decision].inc()
     return decision, pattern_name, lg
 
 

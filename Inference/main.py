@@ -47,7 +47,7 @@ summary = "Minimalistic server providing a REST api to an ONNX session."
 app = default_fastapi_setup(title, summary)
 
 # set up /metrics endpoint for prometheus
-EXECUTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
+EXECUTION_COUNTER, EXCEPTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
     app,
     entrypoints_to_track=[ENTRYPOINT_INFERENCE]
 )
@@ -57,6 +57,7 @@ RESULTS = dict()  # initialize with empty dictionary
 
 @app.post(ENTRYPOINT_INFERENCE)
 @EXECUTION_TIMING[ENTRYPOINT_INFERENCE].time()
+@EXCEPTION_COUNTER[ENTRYPOINT_INFERENCE].count_exceptions()
 async def predict(image: UploadFile = File(...)):
     logger.debug(f"call {ENTRYPOINT_INFERENCE}")
     # increment counter for /metrics endpoint
