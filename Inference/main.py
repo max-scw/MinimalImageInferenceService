@@ -6,7 +6,6 @@ from pathlib import Path
 
 import onnxruntime as ort
 
-import logging
 from timeit import default_timer
 
 # custom packages
