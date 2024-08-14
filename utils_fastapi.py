@@ -6,7 +6,7 @@ from datetime import datetime
 import sys
 import re
 
-from prometheus_fastapi_instrumentator import Instrumentator
+# from prometheus_fastapi_instrumentator import Instrumentator
 
 
 DATETIME_INIT = datetime.now()
@@ -32,12 +32,12 @@ def default_fastapi_setup(title: str = None, summary: str = None, description: s
     )
 
     # create endpoint for prometheus
-    instrumentator = Instrumentator(
-        excluded_handlers=["/test/*", "/metrics"],  # FIXME: not working
-    )
-    # replace not allowed characters
-    metric_namespace = re.sub("[^a-zA-Z0-9]", "_", title.lower())
-    instrumentator.instrument(app, metric_namespace=metric_namespace).expose(app)
+    # instrumentator = Instrumentator(
+    #     excluded_handlers=["/test/*", "/metrics"],  # FIXME: not working
+    # )
+    # # replace not allowed characters
+    # metric_namespace = re.sub("[^a-zA-Z0-9]", "_", title.lower())
+    # instrumentator.instrument(app, metric_namespace=metric_namespace).expose(app)
 
     # ----- home
     @app.get("/")
