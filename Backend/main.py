@@ -2,6 +2,7 @@
 from fastapi import File, UploadFile, HTTPException, Depends
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 import uvicorn
+from prometheus_client import make_asgi_app, Counter, Gauge
 
 import numpy as np
 from pathlib import Path
@@ -20,7 +21,7 @@ from utils_image import image_to_base64, bytes_to_image, save_image
 from utils import get_config, read_mappings_from_csv, setup_logging
 
 from utils_communication import trigger_camera, request_model_inference
-from utils_fastapi import default_fastapi_setup
+from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
 
 from DataModels import (
     SettingsMain,
@@ -60,23 +61,37 @@ save_every_x = int(m.group()) if m else None
 
 # entry points
 ENTRYPOINT = "/"
+ENTRYPOINT_MAIN = ENTRYPOINT + "main"
+ENTRYPOINT_CHECK_PATTERN = ENTRYPOINT + "check-pattern"
 
 # create fastAPI object
 title = "Backend"
 summary = "Minimalistic server providing a REST api to orchestrate a containerized computer vision application."
 app = default_fastapi_setup(title, summary)
 
+
+# set up /metrics endpoint for prometheus
+EXECUTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
+    app,
+    entrypoints_to_track=[ENTRYPOINT_MAIN, ENTRYPOINT_CHECK_PATTERN]
+)
+
+
 # initialize counter
 counter = 0
 
 
-@app.get(ENTRYPOINT + "main")
+@app.get(ENTRYPOINT_MAIN)
+@EXECUTION_TIMING[ENTRYPOINT_MAIN].time()
 def main(
         camera_params: BaslerCameraSettings = Depends(),
         photo_params: PhotoParams = Depends(),
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
+    # increment counter for /metrics endpoint
+    EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
+
     t0 = default_timer()
     # create local CameraInfo instance
     camera_ = CameraInfo(url=CONFIG["CAMERA_URL"], **camera_params.dict())
@@ -247,8 +262,12 @@ def main(
     return JSONResponse(content=content)
 
 
-@app.post(ENTRYPOINT + "check-pattern")
+@app.post(ENTRYPOINT_CHECK_PATTERN)
+@EXECUTION_TIMING[ENTRYPOINT_CHECK_PATTERN].time()
 async def check_pattern(request: PatternRequest):
+    # increment counter for /metrics endpoint
+    EXECUTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].inc()
+
     bboxes = request.coordinates
     class_ids = request.class_ids
     # patterns to check against

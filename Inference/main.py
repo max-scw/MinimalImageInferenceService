@@ -2,7 +2,7 @@
 from fastapi import File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
-from prometheus_client import make_asgi_app, Counter, Gauge
+from prometheus_client import Counter, Gauge
 
 from pathlib import Path
 
@@ -12,7 +12,7 @@ from timeit import default_timer
 
 # custom packages
 from utils import get_config, setup_logging
-from utils_fastapi import default_fastapi_setup
+from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
 from utils_image import scale_coordinates_to_image_size, prepare_image, image_from_bytes
 
 # Setup logging
@@ -47,25 +47,20 @@ summary = "Minimalistic server providing a REST api to an ONNX session."
 app = default_fastapi_setup(title, summary)
 
 # set up /metrics endpoint for prometheus
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)
-# set up custom metrics
-COUNTER = Counter(
-    name="inference_calls",
-    documentation=f"Counts how often the entry point {ENTRYPOINT_INFERENCE} is called."
+EXECUTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
+    app,
+    entrypoints_to_track=[ENTRYPOINT_INFERENCE]
 )
-GAUGE_TIMING = Gauge(
-    name="execution_time_model_inference",
-    documentation="Latest execution time of ONNX model inference"
-)
+# additional custom metrics
 RESULTS = dict()  # initialize with empty dictionary
 
 
 @app.post(ENTRYPOINT_INFERENCE)
+@EXECUTION_TIMING[ENTRYPOINT_INFERENCE].time()
 async def predict(image: UploadFile = File(...)):
     logger.debug(f"call {ENTRYPOINT_INFERENCE}")
     # increment counter for /metrics endpoint
-    COUNTER.inc()
+    EXECUTION_COUNTER[ENTRYPOINT_INFERENCE].inc()
 
     if image.content_type.split("/")[0] != "image":
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
@@ -80,13 +75,12 @@ async def predict(image: UploadFile = File(...)):
     logger.debug(f"Image shape, config: {CONFIG['MODEL_IMAGE_SIZE']}, prepared {img_mdl.shape}")
 
     t0 = default_timer()
-    with GAUGE_TIMING.time():
-        input_name = ONNX_SESSION.get_inputs()[0].name
-        output_name = ONNX_SESSION.get_outputs()[0].name
-        results = ONNX_SESSION.run(
-            output_names=[output_name],
-            input_feed={input_name: img_mdl}
-        )
+    input_name = ONNX_SESSION.get_inputs()[0].name
+    output_name = ONNX_SESSION.get_outputs()[0].name
+    results = ONNX_SESSION.run(
+        output_names=[output_name],
+        input_feed={input_name: img_mdl}
+    )
     logger.debug(f"Inference took {(default_timer() - t0) / 1000:.2g} ms.")
 
     logger.debug(f"len(results)={len(results)}; results[0].shape={results[0].shape}")

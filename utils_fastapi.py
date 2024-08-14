@@ -1,16 +1,23 @@
 import fastapi
 from fastapi import FastAPI
 # from fastapi_offline import FastAPIOffline as FastAPI
+from prometheus_client import make_asgi_app, Counter, Gauge
 from datetime import datetime
 
 import sys
-import re
+
+
+from typing import Union, Tuple, List, Dict
 
 
 DATETIME_INIT = datetime.now()
 
 
-def default_fastapi_setup(title: str = None, summary: str = None, description: str = None):
+def default_fastapi_setup(
+        title: str = None,
+        summary: str = None,
+        description: str = None
+):
     license_info = {
         "name": "MIT License",
         "url": "https://github.com/max-scw/MinimalImageInference/blob/main/LICENSE",
@@ -46,3 +53,27 @@ def default_fastapi_setup(title: str = None, summary: str = None, description: s
         }
 
     return app
+
+
+def setup_prometheus_metrics(
+        app: FastAPI,
+        entrypoints_to_track: list
+) -> Tuple[Dict[str, Counter], Dict[str, Gauge]]:
+    # set up /metrics endpoint for prometheus
+    metrics_app = make_asgi_app()
+    app.mount("/metrics", metrics_app)
+
+    # set up custom metrics
+    execution_counter = dict()
+    execution_timing = dict()
+    for ep in entrypoints_to_track:
+        name = ep.strip("/").replace("/", "_").replace("-", "")
+        execution_counter[ep] = Counter(
+            name=name,
+            documentation=f"Counts how often the entry point {ep} is called."
+        )
+        execution_timing[ep] = Gauge(
+            name=name + "_execution_time",
+            documentation=f"Latest execution time of the entry point {ep}."
+        )
+    return execution_counter, execution_timing
