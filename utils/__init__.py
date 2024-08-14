@@ -10,5 +10,5 @@ from .env_vars import (
 )
 
 # config
-from .config import set_logging, get_config
+from .config import get_config
 from .mapping import get_dict_from_file_or_envs, read_mappings_from_csv
