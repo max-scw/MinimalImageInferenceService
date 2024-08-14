@@ -9,7 +9,6 @@ from pathlib import Path
 import onnxruntime as ort
 
 from timeit import default_timer
-from time import sleep
 
 # custom packages
 from utils import get_config, setup_logging
@@ -31,6 +30,8 @@ logger.info(f"Loading model from {path_to_model_file} (file exists: {path_to_mod
 # initialize ONNX session
 ONNX_SESSION = ort.InferenceSession(
     path_to_model_file,
+    providers=CONFIG["ONNX_PROVIDERS"] if "ONNX_PROVIDERS" in CONFIG else None
+    # https://onnxruntime.ai/docs/execution-providers/
 )
 
 # log input shapes

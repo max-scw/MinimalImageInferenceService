@@ -7,3 +7,5 @@ folder_data="./data/"
 image_size=[544, 640]
 precision="fp32"
 #precision="fp16"
+onnx_providers=["CPUExecutionProvider"]
+
