@@ -9,19 +9,8 @@ from typing import Union
 
 from utils import (
     get_environment_variables,
-    get_env_variable,
-    cast_logging_level
+    get_env_variable
 )
-
-
-def set_logging():
-    log_file = get_env_variable("LOGFILE", None)
-    logging.basicConfig(
-        level=cast_logging_level(get_env_variable("LOGGING_LEVEL", logging.INFO)),
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        # handlers=[logging.StreamHandler(sys.stdout)] +
-        #          [logging.FileHandler(Path(log_file).with_suffix(".log"))] if log_file is not None else [],
-    )
 
 
 re_replace = re.compile("[^a-zA-Z0-9]")
@@ -69,7 +58,4 @@ def get_config(default_prefix: str = "") -> dict:
     # merge configs
     config = config_default | config_environment_vars
 
-    # set logging
-    set_logging()
-    logging.debug(f"Configuration: {config}")
     return config
