@@ -58,7 +58,7 @@ RESULTS = dict()  # initialize with empty dictionary
 @app.post(ENTRYPOINT_INFERENCE)
 @EXECUTION_TIMING[ENTRYPOINT_INFERENCE].time()
 @EXCEPTION_COUNTER[ENTRYPOINT_INFERENCE].count_exceptions()
-async def predict(image: UploadFile = File(...)):
+def predict(image: UploadFile = File(...)):
     logger.debug(f"call {ENTRYPOINT_INFERENCE}")
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_INFERENCE].inc()
@@ -67,7 +67,7 @@ async def predict(image: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image.")
 
     # wait for file transmission
-    image_bytes = await image.read()
+    image_bytes = image.read()
     img = image_from_bytes(image_bytes)
     logger.debug(f"Image received: {img.shape}")
 
