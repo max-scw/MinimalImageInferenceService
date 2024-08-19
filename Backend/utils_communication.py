@@ -20,7 +20,7 @@ logger = setup_logging(__name__)
 def trigger_camera(
         camera_info: CameraInfo,
         photo_params: PhotoParams,
-        timeout: int = 1000
+        timeout: int = 5  # seconds
 ) -> Union[bytes, None]:
     """
     wrapper
@@ -48,7 +48,10 @@ def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
     return url
 
 
-def request_camera(address: str, timeout: int = 1000) -> Union[bytes, None]:
+def request_camera(
+        address: str,
+        timeout: int = 5  # seconds
+) -> Union[bytes, None]:
 
     t0 = default_timer()
     response = requests.get(url=address, timeout=timeout)
@@ -80,7 +83,7 @@ def request_model_inference(
         address: str,
         image_raw: bytes,
         extension: str,
-        timeout: int = 1000
+        timeout: int = 5  # seconds
 ) -> ResultInference:
 
     logger.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")

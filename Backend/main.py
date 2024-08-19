@@ -114,7 +114,7 @@ def main(
     # ----- Camera
     try:
         # trigger camera
-        img_bytes = trigger_camera(camera_, photo_params, timeout=1000)  # FIXME: adjust timeout
+        img_bytes = trigger_camera(camera_, photo_params, timeout=CONFIG["CAMERA_TIMEOUT"])
 
         # log execution time
         t2 = default_timer()
@@ -139,7 +139,8 @@ def main(
             result: ResultInference = request_model_inference(
                 address=address,
                 image_raw=img_bytes,
-                extension=photo_params.format
+                extension=photo_params.format,
+                timeout=CONFIG["INFERENCE_TIMEOUT"]
             )
             bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
 

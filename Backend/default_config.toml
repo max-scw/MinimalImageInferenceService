@@ -3,6 +3,7 @@ prefix="BE"
 [inference]
 url="http://inference:5050/inference"
 #url="http://localhost:5052/inference"
+timeout=2  # seconds
 
 
 [camera]
@@ -15,7 +16,7 @@ emulate_camera=true
 #transmission_type=
 #destination_ip_address=
 #destination_port=
-#timeout=
+timeout=4  # seconds
 image_extension=".jpg"
 #pixel_format="Mono"
 

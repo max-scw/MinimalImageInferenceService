@@ -1,13 +1,13 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.4.3
+    image: maxscw/baslercameraadapter:v0.4.12
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
       - FRAMES_PER_SECOND=10
-      - ACQUISITION_MODE=Continuous
+      - ACQUISITION_MODE=SingleFrame
 
       - TRANSMISSION_TYPE=Multicast
       - DESTINATION_PORT=46000
@@ -16,7 +16,7 @@ services:
       - PIXEL_TYPE=Mono8
 
       - EXPOSURE_TIME=6000
-      - TIMEOUT=2000
+      - TIMEOUT_MS=5001
       - IMAGE_FORMAT=jpeg
       - IMAGE_QUALITY=100
     volumes:
@@ -58,6 +58,10 @@ services:
 #      - BE_CAMERA_URL=http://camera-adapter:5050/basler/continuous-acquisition/get-image
       - BE_CAMERA_URL=http://camera-adapter:5050/basler/single-frame-acquisition/take-photo
 #      - BE_CAMERA_*
+      - BE_CAMERA_TIMEOUT=5.1
+      - BE_INFERENCE_TIMEOUT=2
+      # model
+      - BE_MODEL_MAPPING=./data/class_map_CRU.csv
       # general
       - BE_GENERAL_SAVE_IMAGES=all
     volumes:
@@ -111,6 +115,8 @@ services:
   # ----- MONITORING -----
   prometheus-db-service:
     image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus  # Persistent storage for Prometheus data
@@ -118,6 +124,8 @@ services:
       - 5007:9090
     depends_on:
       - basler-camera-service
+      - backend-service
+      - inference-service
 
 volumes:
   prometheus_data:
