@@ -50,7 +50,7 @@ logger.debug(f"Configuration (CONFIG): {CONFIG}")
 # get patterns to check the model prediction
 PATTERNS, DEFAULT_PATTERN_KEY = get_patterns_from_config(CONFIG)
 # naming & colors for the (predicted) classes
-path_to_mapping = Path(CONFIG["MODEL_FOLDER_HEAD"]) / CONFIG["MODEL_FOLDER_DATA"] / (CONFIG["MODEL_MAPPINGS"] if "MODEL_MAPPINGS" in CONFIG else "")
+path_to_mapping = Path(CONFIG["MODEL_FOLDER_HEAD"]) / (CONFIG["MODEL_MAPPING"] if "MODEL_MAPPING" in CONFIG else "")
 logger.debug(f"path_to_mapping={path_to_mapping}")
 CLASS_MAP, COLOR_MAP = read_mappings_from_csv(path_to_mapping)
 

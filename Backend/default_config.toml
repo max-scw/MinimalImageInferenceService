@@ -26,7 +26,7 @@ image_extension=".jpg"
 [model]
 folder_head="./"
 folder_data="data"
-mappings=""
+mapping=""
 
 [general]
 save_images="all"  # literal: "all", "every x", "no"
