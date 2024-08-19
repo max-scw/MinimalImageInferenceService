@@ -5,7 +5,7 @@ FROM python:3.11-slim-bullseye
 
 # Metadata
 LABEL author=SCHWMAX
-LABEL version=2024.06.18
+LABEL version=2024.08.19
 
 # Environment variables (default values)
 ENV LOGFILE=Inference
@@ -31,9 +31,19 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy app into the container
 # 1. copy shated files
 ADD utils ./utils/
-COPY utils_fastapi.py DataModels.py DataModelsCamera.py README.md LICENSE ./
+COPY utils_fastapi.py \
+     utils_image.py \
+     DataModels.py \
+     DataModels_BaslerCameraAdapter.py \
+     utils_config.py  \
+     README.md \
+     LICENSE \
+     ./
 # 2. copy individual files
-COPY Inference/main.py Inference/utils_image.py Inference/default_config.toml ./
+COPY Inference/main.py \
+     Inference/utils_image.py \
+     Inference/default_config.toml \
+     ./
 
 
 # set to non-root user
