@@ -16,7 +16,7 @@ from threading import Thread
 # custom packages
 from plot_pil import plot_bboxs
 from check_boxes import check_boxes, get_patterns_from_config
-from utils_image import image_to_base64, bytes_to_image, save_image
+from utils_image import image_to_base64, bytes_to_image_pil, save_image
 
 from utils import get_config, read_mappings_from_csv, setup_logging
 
@@ -169,7 +169,7 @@ def main(
     t6 = default_timer()
 
     # img from bytes
-    img = bytes_to_image(img_bytes)
+    img = bytes_to_image_pil(img_bytes)
     t7 = default_timer()
     logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 

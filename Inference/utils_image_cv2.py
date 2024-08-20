@@ -7,8 +7,13 @@ from datetime import datetime
 from typing import Union, Tuple, Literal
 
 
-def image_from_bytes(image_bytes) -> np.ndarray:
-    return cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
+def bytes_to_image_array(image_bytes: object) -> np.ndarray:
+    # Convert the bytes data to a numpy array
+    np_arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    # Decode the image using OpenCV
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    # convert color from OpenCV BGR format to RGB format
+    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
 def load_image(path_to_image: Union[str, Path], imgsz: Tuple[int, int]) -> np.ndarray:

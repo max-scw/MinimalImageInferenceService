@@ -41,7 +41,7 @@ COPY utils_fastapi.py \
      ./
 # 2. copy individual files
 COPY Inference/main.py \
-     Inference/utils_image.py \
+     Inference/utils_image_cv2.py \
      Inference/default_config.toml \
      ./
 

@@ -9,7 +9,7 @@ import base64
 from typing import Union, List, Tuple
 
 
-def bytes_to_image(raw_image: bytes) -> Image:
+def bytes_to_image_pil(raw_image: bytes) -> Image:
     img_ary = np.frombuffer(raw_image, np.uint8)
     return Image.open(io.BytesIO(img_ary))
 
