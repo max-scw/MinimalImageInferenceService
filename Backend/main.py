@@ -1,8 +1,10 @@
 # from fastapi_offline import FastAPIOffline as FastAPI
 from fastapi import File, UploadFile, HTTPException, Depends
-from fastapi.responses import Response, JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 import uvicorn
-from prometheus_client import make_asgi_app, Counter, Gauge
+from prometheus_client import Counter, Gauge
+
+from requests.exceptions import ConnectionError
 
 import numpy as np
 from pathlib import Path
@@ -157,13 +159,11 @@ def main(
             t5 = default_timer()
             logger.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
-        msg = "TimeoutError: Inference backend not responding."
-        logger.error(msg)
-        raise HTTPException(status_code=408, detail=msg)
+        raise HTTPException(status_code=408, detail="TimeoutError: Inference backend not responding.")
+    except ConnectionError as e:
+        raise HTTPException(status_code=408, detail=f"No connection to inference server: {e}")
     except Exception as e:
-        msg = f"Fatal error at inference backend: {e}"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
+        raise HTTPException(status_code=400, detail=f"Unknown fatal error at inference backend: {e}")
 
     # TODO: draw bounding-boxes on image? => Threading
     t6 = default_timer()

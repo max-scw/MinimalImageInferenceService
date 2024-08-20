@@ -108,7 +108,7 @@ class BaslerCameraAtom(BaseModel):
 
 
 class BaslerCameraSettings(BaslerCameraAtom):
-    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", "Unicast")
+    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", None)
     destination_ip_address: Optional[str] = default_from_env("DESTINATION_IP_ADDRESS", None)
     destination_port: Optional[
         Annotated[int, Field(strict=False, le=653535, ge=26)]  # dynamic ports 49152-65535
@@ -119,7 +119,7 @@ class BaslerCameraSettings(BaslerCameraAtom):
 
 
 class BaslerCameraParams(BaslerCameraSettings):
-    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", "SingleFrame")
+    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", None)
 
 
 class ImageParams(BaseModel):
@@ -127,10 +127,10 @@ class ImageParams(BaseModel):
     format: Optional[str] = default_from_env("IMAGE_FORMAT", "jpeg")
     quality: Optional[
         Annotated[int, Field(strict=False, le=100, ge=10)]
-    ] = default_from_env("IMAGE_QUALITY", 100)
+    ] = default_from_env("IMAGE_QUALITY", None)
     # image processing: rotation
-    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", 0)  # degree
-    rotation_expand: Optional[bool] = False
+    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", None)  # degree
+    rotation_expand: Optional[bool] = None
     # image processing: crop
     # roi: Optional[Tuple[float, float, float, float]] = default_from_env("REGION_OF_INTEREST", None)
 
@@ -138,10 +138,10 @@ class ImageParams(BaseModel):
 class PhotoParams(ImageParams):
     exposure_time_microseconds: Optional[
             Annotated[int, Field(strict=False, ge=500)]
-    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], 1000)  # micro seconds
+    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], None)  # micro seconds
 
     timeout: Optional[
         Annotated[int, Field(strict=False, ge=200)]
-    ] = default_from_env("TIMEOUT_MS", 5000)  # milli seconds
+    ] = default_from_env("TIMEOUT_MS", None)  # milli seconds
 
     emulate_camera: bool = default_from_env("EMULATE_CAMERA", False)

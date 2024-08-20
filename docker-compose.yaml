@@ -92,7 +92,6 @@ services:
       - FE_CAMERA_TRANSMISSION_TYPE=Multicast
       - FE_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.223
       - FE_CAMERA_DESTINATION_PORT=46000
-      - FE_CAMERA_IMAGE_EXTENSION=.jpg
       - FE_CAMERA_IMAGE_FORMAT=jpeg
       - FE_CAMERA_IMAGE_QUALITY=100
 #      - FE_CAMERA_PIXEL_TYPE=BayerRG8
@@ -127,5 +126,26 @@ services:
       - backend-service
       - inference-service
 
+  grafana-service:
+    image: grafana/grafana-oss:11.1.3
+    container_name: grafana
+    environment:
+      - GF_LOG_LEVEL=debug
+      - GF_SECURITY_ADMIN_PASSWORD=um]pAAmz(O{_1dvDLQHgxW9z90ql<mUBPwM0vmNc1fUz[sKy5)ITs[zfOjv<7Pfi-Je7grir}dGDKBP0FmsZ}(_s8In-8yvy7wa7
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/dashboard.json
+    volumes:
+      - 'grafana_data:/var/lib/grafana'
+      - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasource.yml:ro
+#      - ./monitoring/grafana/dashboards_config.yml:/var/lib/grafana/dashboards/dashboards.yml:ro
+#      - ./monitoring/grafana/dashboard.json:/var/lib/grafana/dashboards/dashboard.json:ro
+    ports:
+    depends_on:
+      - prometheus-db-service
+
 volumes:
   prometheus_data:
+  grafana_data:

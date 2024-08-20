@@ -25,6 +25,9 @@ def trigger_camera(
     """
     wrapper
     """
+    # synchronize timeout between request and pylon.RetrieveImage function
+    photo_params.timeout = int(timeout * 1000)
+
     t0 = default_timer()
     url = build_url(camera_info, photo_params)
     t1 = default_timer()
@@ -42,7 +45,7 @@ def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
         if ky in BaslerCameraSettings.model_fields
     }
     # merge with photo parameter
-    params |= photo_params
+    params |= get_not_none_values(photo_params)
     # build url
     url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
     return url
