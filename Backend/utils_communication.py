@@ -26,7 +26,7 @@ def trigger_camera(
     wrapper
     """
     # synchronize timeout between request and pylon.RetrieveImage function
-    photo_params.timeout = int(timeout * 1000)
+    camera_info.timeout_ms = int(timeout * 1000)
 
     t0 = default_timer()
     url = build_url(camera_info, photo_params)

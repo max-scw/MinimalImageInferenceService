@@ -1,7 +1,7 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/baslercameraadapter:v0.4.12
+    image: maxscw/baslercameraadapter:v0.4.14
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
