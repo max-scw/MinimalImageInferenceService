@@ -31,11 +31,11 @@ def trigger_camera(
     t0 = default_timer()
     url = build_url(camera_info, photo_params)
     t1 = default_timer()
-    logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000} ms)")
+    logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000:.4g} ms)")
 
     response = request_camera(url, timeout)
     t2 = default_timer()
-    logger.debug(f"trigger_camera(): request_camera(url, timeout={timeout}) (took {(t2 - t1) * 1000} ms)")
+    logger.debug(f"trigger_camera(): request_camera(url, timeout={timeout}) (took {(t2 - t1) * 1000:.4g} ms)")
     return response
 
 
