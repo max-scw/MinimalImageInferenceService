@@ -19,8 +19,8 @@ services:
       - TIMEOUT_MS=5001
       - IMAGE_FORMAT=jpeg
       - IMAGE_QUALITY=100
-    volumes:
-      - ./testimages:/home/app/test
+#    volumes:
+#      - ./testimages:/home/app/test
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
@@ -116,15 +116,18 @@ services:
     image: prom/prometheus
     container_name: prometheus
     restart: unless-stopped
+    environment:
+      - PROM_USERNAME=agent
+      - PROM_PASSWORD=l8',ZD/vUhBL=V,W[LI&uSyoUbU~T<o,hZ.rL/uTw]
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus  # Persistent storage for Prometheus data
     ports:
-      - 5007:9090
-    depends_on:
-      - basler-camera-service
-      - backend-service
-      - inference-service
+#      - 5007:9090  # only for debugging
+#    depends_on:
+#      - basler-camera-service
+#      - backend-service
+#      - inference-service
 
   grafana-service:
     image: grafana/grafana-oss:11.1.3
@@ -132,20 +135,21 @@ services:
     environment:
       - GF_LOG_LEVEL=debug
       - GF_SECURITY_ADMIN_PASSWORD=um]pAAmz(O{_1dvDLQHgxW9z90ql<mUBPwM0vmNc1fUz[sKy5)ITs[zfOjv<7Pfi-Je7grir}dGDKBP0FmsZ}(_s8In-8yvy7wa7
-      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_USER=master
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/dashboard.json
     volumes:
-      - 'grafana_data:/var/lib/grafana'
-      - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasource.yml:ro
-#      - ./monitoring/grafana/dashboards_config.yml:/var/lib/grafana/dashboards/dashboards.yml:ro
-#      - ./monitoring/grafana/dashboard.json:/var/lib/grafana/dashboards/dashboard.json:ro
+      - 'grafana_data:/var/lib/grafana'  # Persistent storage for Grafana data. Not required as nothing should be changed
+      - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./monitoring/grafana/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json:ro
+      - ./monitoring/grafana/dashboard.json:/var/lib/grafana/dashboards/dashboard.json:ro
     ports:
+      - 5008:3000
     depends_on:
       - prometheus-db-service
 
 volumes:
   prometheus_data:
-  grafana_data:
+#  grafana_data:

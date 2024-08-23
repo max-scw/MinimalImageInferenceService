@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+#    uid: ${DS_PROMETHEUS}
+    uid: myprom-a14d5aa7-8d5a-479b-9b21-4e9154cb64f4
+    basicAuth: true
+    basicAuthUser: master
+    basicAuthPassword: l8',ZD/vUhBL=V,W[LI&uSyoUbU~T<o,hZ.rL/uTw]
+    jsonData:
+      httpMethod: POST
+
