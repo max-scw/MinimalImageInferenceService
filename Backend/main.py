@@ -199,7 +199,7 @@ def main(
     if pattern_key:
         t0 = default_timer()
         decision, pattern_name, lg = _check_pattern(
-            bboxes,
+            np.array(bboxes) / (img.size + img.size),
             class_ids,
             PATTERNS[pattern_key]
         )
@@ -212,7 +212,7 @@ def main(
             logger.info(msg)
         elif pattern_name:
             msg = (f"Not all objects were found. "
-                   f"Best pattern: {pattern_name} with {lg}.")
+                   f"Best pattern: {pattern_name} with {sum(lg)} / {len(lg)}.")
             logger.warning(msg)
 
         # Save image if applicable

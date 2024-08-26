@@ -25,13 +25,14 @@ def read_label(path_to_file: Path, suffix: str = None):
     return np.asarray([el.split(" ") for el in content], dtype=float)
 
 
-def determine_desired_coordinates(path_to_file: Path, factor_std: float = 2) -> Tuple[np.ndarray, np.ndarray]:
+def determine_desired_coordinates(path_to_file: Path, factor_std: float = 3) -> Tuple[np.ndarray, np.ndarray]:
     # read file
     files = [Path(ln) for ln in read_file(path_to_file)]
 
     # cast to numeric
     labels = [read_label(fl) for fl in files]
     n_clusters = max([len(el) for el in labels])
+    print(f"Using {n_clusters} clusters.")
 
     # flatten to get a list of data points
     points = np.vstack(labels)
@@ -41,34 +42,36 @@ def determine_desired_coordinates(path_to_file: Path, factor_std: float = 2) -> 
     points[lg, 0] = 0
 
     # fit k-means to determine the best cluster centers
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(points[:, 1:])
-    xywh = kmeans.cluster_centers_
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(points)
+    cxywh = kmeans.cluster_centers_
 
     # 1st: classify points
-    cls = kmeans.predict(points[:, 1:])
+    cls = kmeans.predict(points)
     # 2nd: determine variance
-    xywh_std = []
+    cxywh_std = []
     for i in range(n_clusters):
         lg = cls == i
-        std = np.std(points[lg, 1:] - xywh[i, :], axis=0)
-        xywh_std.append(std)
+        std = np.std(points[lg] - cxywh[i, :], axis=0)
+        cxywh_std.append(std)
     # to matrix
-    xywh_std = np.vstack(xywh_std)
+    cxywh_std = np.vstack(cxywh_std)
 
-    xywh_tolerances = factor_std * xywh_std.max(axis=0)
+    xywh_tolerances = factor_std * cxywh_std[:, 1:].max(axis=0)
 
-    return xywh, xywh_tolerances
+    # enforce positive integers as class ids
+    cxywh[:, 0] = np.abs(cxywh[:, 0].round())
+    return cxywh, xywh_tolerances
 
 
 if __name__ == "__main__":
-    filename = "Pattern_State_*.txt"
+    filename = "CRU_TrnVal4pattern_L*.txt"
     path_to_files = Path()
 
     filename_export = "desired_coordinates.yml"
 
     info = dict()
     for fl in path_to_files.glob(filename):
-        coordinates, tolerances = determine_desired_coordinates(fl, 2)
+        coordinates, tolerances = determine_desired_coordinates(fl, 3)
         info[fl.stem] = {"positions": coordinates.round(3).tolist(), "tolerance": tolerances.round(3).tolist()}
 
     with open(path_to_files / filename_export, "w") as fid:

@@ -90,13 +90,14 @@ def check_boxes(
             # reset found_boxes
             found_boxes = []
             for pos in vl["positions"]:
+                assert len(pos) == 5, ValueError(f"Expecting pattern to consist of 5 elements (class-ID + 4 positions)")
                 id_des = pos[0]
                 bbx_des = pos[1:5]
 
                 # loop through actual boxes
                 found = False
                 for bbx_act, id_act in zip(bboxes, class_ids):
-                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol)
+                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol[1:]) # FIXME
                     # shortcut
                     if found:
                         break
