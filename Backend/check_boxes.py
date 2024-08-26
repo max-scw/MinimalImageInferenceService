@@ -8,16 +8,16 @@ from typing import List, Dict, Tuple, Union, Any
 
 def get_patterns_from_config(config: Dict[str, Any]) -> Tuple[dict, str]:
 
-    if "FOLDER" in config:
-        folder = config["FOLDER"]
+    if "PATTERN_FILE" in config:
+        file = config["PATTERN_FILE"]
     else:
         warnings.warn("No folder provided where patterns are stored in.")
         return dict(), ""
 
     # load patterns
-    patterns = load_patterns(folder)
+    patterns = load_patterns(file)
     # get default pattern key
-    default_pattern_key = config["DEFAULT_PATTERN"] if "DEFAULT_PATTERN" in config else None
+    default_pattern_key = config["PATTERN_DEFAULT"] if "PATTERN_DEFAULT" in config else None
 
     # use fist pattern if no pattern key was provided
     if not default_pattern_key:
@@ -25,9 +25,9 @@ def get_patterns_from_config(config: Dict[str, Any]) -> Tuple[dict, str]:
             default_pattern_key = list(patterns.keys())[0]
             logging.info(f"No default pattern key provided. Using '{default_pattern_key}' as default pattern")
         else:
-            logging.warning(f"No pattern file found in {folder}.")
+            logging.warning(f"No pattern file found in {file}.")
     elif default_pattern_key not in patterns:
-        msg = f"Default pattern '{default_pattern_key}' not found in {folder}"
+        msg = f"Default pattern '{default_pattern_key}' not found in {file}"
         logging.error(msg)
         raise Exception(msg)
     return patterns, default_pattern_key
@@ -41,19 +41,24 @@ def load_yaml(path: Union[str, Path]) -> dict:
         raise FileNotFoundError()
 
 
-def load_patterns(folder: Union[str, Path]) -> dict:
-    folder = Path(folder)
-    if not folder.is_dir():
-        raise NotADirectoryError(f"Expecting a directory at {folder.as_posix()} but was none.")
-
-    # find all YAML files
+def load_patterns(path_to_pattern: Union[str, Path]) -> dict:
+    path_to_pattern = Path(path_to_pattern)
+    # expected file extensions
     extensions = [".yaml", ".yml"]
-    files = [p for p in folder.rglob("*") if p.suffix in extensions]
+
+    if path_to_pattern.is_dir():
+        # find all YAML files
+        files = [p for p in path_to_pattern.rglob("*") if p.suffix in extensions]
+    elif path_to_pattern.is_file() and (path_to_pattern.suffix in extensions):
+        files = [path_to_pattern]
+    else:
+        raise FileNotFoundError(f"No YAML files found in {path_to_pattern}")
 
     patterns = dict()
     for fl in files:
         patterns[fl.stem] = load_yaml(fl)
-    logging.debug(f"{len(patterns)} Pattern(s) loaded from folder {folder.as_posix()}: {patterns}")
+    logging.debug(f"{len(patterns)} Pattern(s) loaded from {path_to_pattern.as_posix()}: {patterns}")
+
     return patterns
 
 
