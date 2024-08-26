@@ -214,8 +214,9 @@ def main():
             st.session_state.button_overrule_disabled = False
         elif st.session_state.image["show"] is not None:
             if st.session_state.image["pattern_lg"] is not None:
+                lg = st.session_state.image['pattern_lg']
                 msg = (f"Not all objects were found. "
-                       f"Best pattern: {st.session_state.image['pattern_name']} with {st.session_state.image['pattern_lg']}.")
+                       f"Best pattern: {st.session_state.image['pattern_name']} with {sum(lg)} / {len(lg)}.")
                 logging.warning(msg)
                 st.error(msg, icon="🚨")
             else:

@@ -53,8 +53,9 @@ class OptionsReturnValuesMain(BaseModel):
 
 # ----- Pattern-Check
 class Pattern(BaseModel):
-    positions: List[Tuple[Union[int, float], Union[int, float], Union[int, float], Union[int, float]]]
-    tolerances: List[Union[int, float]]
+    class_id: int
+    positions: Tuple[float, float, float, float]
+    tolerances: Tuple[float, float, float, float]
 
 
 class PatternRequest(BaseModel):
@@ -64,5 +65,3 @@ class PatternRequest(BaseModel):
     # pattern to check against
     pattern_key: Optional[str] = None
     pattern: Optional[Union[Pattern, Dict[str, Pattern]]] = None
-
-

@@ -72,9 +72,9 @@ def is_xyxy(bboxes: List[List[float]]) -> bool:
 
 
 def check_boxes(
-        bboxes: List[Tuple[Union[int, float], Union[int, float], Union[int, float], Union[int, float]]],
+        bboxes: List[Tuple[float, float, float, float]],
         class_ids: List[int],
-        config: Dict[str, Dict[str, Union[List[float], List[List[float]]]]],
+        config: Dict[str, List[Dict[str, Union[int, Tuple[float, float, float, float]]]]],
 ) -> Tuple[str, List[bool]]:
 
     # check if boxes need to be scaled to center coordinates
@@ -86,18 +86,17 @@ def check_boxes(
     found_boxes_best = []
     if config:
         for ky, vl in config.items():
-            tol = vl["tolerance"]
             # reset found_boxes
             found_boxes = []
-            for pos in vl["positions"]:
-                assert len(pos) == 5, ValueError(f"Expecting pattern to consist of 5 elements (class-ID + 4 positions)")
-                id_des = pos[0]
-                bbx_des = pos[1:5]
+            for el in vl:
+                id_des = el["class_id"]
+                bbx_des = el["positions"]
+                tol = el["tolerance"]
 
                 # loop through actual boxes
                 found = False
                 for bbx_act, id_act in zip(bboxes, class_ids):
-                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol[1:]) # FIXME
+                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol)
                     # shortcut
                     if found:
                         break

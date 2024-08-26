@@ -25,7 +25,7 @@ def read_label(path_to_file: Path, suffix: str = None):
     return np.asarray([el.split(" ") for el in content], dtype=float)
 
 
-def determine_desired_coordinates(path_to_file: Path, factor_std: float = 3) -> Tuple[np.ndarray, np.ndarray]:
+def determine_desired_coordinates(path_to_file: Path, factor_std: float = 3):
     # read file
     files = [Path(ln) for ln in read_file(path_to_file)]
 
@@ -48,19 +48,26 @@ def determine_desired_coordinates(path_to_file: Path, factor_std: float = 3) -> 
     # 1st: classify points
     cls = kmeans.predict(points)
     # 2nd: determine variance
-    cxywh_std = []
+    cxywh_tol = []
     for i in range(n_clusters):
         lg = cls == i
-        std = np.std(points[lg] - cxywh[i, :], axis=0)
-        cxywh_std.append(std)
-    # to matrix
-    cxywh_std = np.vstack(cxywh_std)
+        #
+        diff = points[lg, 1:] - cxywh[i, 1:]
+        # standard deviation
+        std = np.std(diff, axis=0)
+        # tolerance
+        tol = factor_std * std
 
-    xywh_tolerances = factor_std * cxywh_std[:, 1:].max(axis=0)
+        n_passed = sum((np.abs(diff) <= tol).all(axis=1))
+        print(f"Class-ID {i}: {n_passed} / {sum(lg)} (all: {n_passed == sum(lg)})")
+
+        cxywh_tol.append(tol)
+    # to matrix
+    xywh_tolerances = np.vstack(cxywh_tol)
 
     # enforce positive integers as class ids
-    cxywh[:, 0] = np.abs(cxywh[:, 0].round())
-    return cxywh, xywh_tolerances
+    cls = cxywh[:, 0].round().astype(int)
+    return cls, cxywh[:, 1:], xywh_tolerances
 
 
 if __name__ == "__main__":
@@ -71,8 +78,13 @@ if __name__ == "__main__":
 
     info = dict()
     for fl in path_to_files.glob(filename):
-        coordinates, tolerances = determine_desired_coordinates(fl, 3)
-        info[fl.stem] = {"positions": coordinates.round(3).tolist(), "tolerance": tolerances.round(3).tolist()}
+        cls, pos, tol = determine_desired_coordinates(fl, 6)
+        info[fl.stem] = [
+            {"class_id": c, "positions": p, "tolerance": t}
+            for c, p, t in zip(cls.tolist(), pos.round(3).tolist(), tol.round(3).tolist())
+        ]
+
+        # TODO visualize cluster positions!
 
     with open(path_to_files / filename_export, "w") as fid:
         yaml.dump(info, fid)
