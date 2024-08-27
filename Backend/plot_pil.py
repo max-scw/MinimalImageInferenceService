@@ -94,3 +94,30 @@ def plot_bboxs(
             fontsize=fontsize
         )
     return image
+
+
+def plot_bounds(
+        img: Image.Image,
+        bounds: List[Dict[str, Union[int, Tuple[float, float, float, float]]]]
+) -> Image.Image:
+    draw = ImageDraw.Draw(img)
+
+    def to_abs_coords(xy):
+        return np.array(xy) * img.size
+
+    for ref in bounds:
+        pos = ref["positions"]
+        tol = ref["tolerance"]
+
+        # bounding box
+        xy = to_abs_coords(pos[:2])
+        xy_tol = to_abs_coords(tol[:2])
+        center_bounds = np.hstack((xy - xy_tol, xy + xy_tol)).round().astype(int).tolist()
+
+        wh = to_abs_coords(pos[2:])
+        wh_tol = to_abs_coords(tol[2:])
+        outer_bounds = np.hstack((xy - wh / 2 - wh_tol, xy + wh / 2 + wh_tol)).round().astype(int).tolist()
+
+        draw.rectangle(center_bounds, width=1, outline="white")
+        draw.rectangle(outer_bounds, width=1, outline="white")
+    return img

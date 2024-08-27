@@ -10,13 +10,14 @@ import numpy as np
 from pathlib import Path
 import re
 
+import os
+os.environ["LOGGING_LEVEL"] = "DEBUG"
 
-import logging
 from timeit import default_timer
 from threading import Thread
 
 # custom packages
-from plot_pil import plot_bboxs
+from plot_pil import plot_bboxs, plot_bounds
 from check_boxes import check_boxes, get_patterns_from_config
 from utils_image import image_to_base64, bytes_to_image_pil, save_image
 
@@ -197,15 +198,11 @@ def main(
         pattern_key = DEFAULT_PATTERN_KEY
 
     if pattern_key:
-        t0 = default_timer()
         decision, pattern_name, lg = _check_pattern(
             np.array(bboxes) / (img.size + img.size),
             class_ids,
             PATTERNS[pattern_key]
         )
-        # log execution time
-        dt = default_timer() - t0
-        logger.debug(f"Pattern check took {dt * 1000:.4g} ms")
 
         if decision:
             msg = f"Bounding-Boxes found for pattern {pattern_name}"
@@ -214,6 +211,11 @@ def main(
             msg = (f"Not all objects were found. "
                    f"Best pattern: {pattern_name} with {sum(lg)} / {len(lg)}.")
             logger.warning(msg)
+
+            # visualize
+            if pattern_name:
+                pat_failed = [vl for ky, vl in zip(lg, PATTERNS[pattern_key][pattern_name]) if not ky]
+                img_draw = plot_bounds(img_draw, pat_failed)
 
         # Save image if applicable
         if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
@@ -320,7 +322,7 @@ def _check_pattern(
     pattern_name, lg = check_boxes(bboxes, class_ids, pattern)
     dt = default_timer() - t0
 
-    logging.debug(f"check_boxes(): pattern_name={pattern_name}, lg={lg}; took {dt:.4g} s")
+    logger.debug(f"check_boxes(): pattern_name={pattern_name}, {sum(lg)}/{len(lg)} (lg={lg}); took {dt * 1000:.4g} ms")
 
     # output
     decision = (len(lg) > 1) and all(lg)
