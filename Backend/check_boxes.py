@@ -77,9 +77,12 @@ def check_boxes(
         config: Dict[str, List[Dict[str, Union[int, Tuple[float, float, float, float]]]]],
 ) -> Tuple[str, List[bool]]:
 
-    # check if boxes need to be scaled to center coordinates
-    if is_xyxy(bboxes):
-        bboxes = xyxy2xywh(bboxes)
+    # REQUIRES xy1xy2 COORDINATES!
+    # bboxes_xyxy = xywh2xyxy(bboxes)
+    bboxes_xyxy = bboxes
+    # # check if boxes need to be scaled to center coordinates
+    # if is_xyxy(bboxes):
+    #     bboxes = xyxy2xywh(bboxes)
 
     # loop through config to find box pattern
     info = ""
@@ -90,13 +93,15 @@ def check_boxes(
             found_boxes = []
             for el in vl:
                 id_des = el["class_id"]
-                bbx_des = el["positions"]
-                tol = el["tolerance"]
+
+                bbx_inner = el["inner"]
+                bbx_outer = el["outer"]
 
                 # loop through actual boxes
                 found = False
-                for bbx_act, id_act in zip(bboxes, class_ids):
-                    found = check_box(id_act, bbx_act, id_des, bbx_des, tol)
+                for bbx_act, id_act in zip(bboxes_xyxy, class_ids):
+                    # print(f"id_des: {id_des} id_act: {id_act} | {bbx_inner[0]} <")
+                    found = check_box(id_act, bbx_act, id_des, bbx_inner, bbx_outer)
                     # shortcut
                     if found:
                         break
@@ -111,20 +116,19 @@ def check_boxes(
     return info, found_boxes_best
 
 
-def check_box(id_act, bbx_act, id_des, bbx_des, tol) -> bool:
+def check_box(id_act, bbx_act, id_des, bbx_in, bbx_out) -> bool:
     found = False
     if id_act == id_des:
         # check difference
-        for x1, x2, dx in zip(bbx_act, bbx_des, tol):
-            if abs(x1 - x2) < dx:
-                found = True
-            else:
-                found = False
-                break
-    return found
+        found = (bbx_in[0] >= bbx_act[0] >= bbx_out[0]) and \
+                (bbx_in[1] >= bbx_act[1] >= bbx_out[1]) and \
+                (bbx_in[2] <= bbx_act[2] <= bbx_out[2]) and \
+                (bbx_in[3] <= bbx_act[3] <= bbx_out[3])
+
+    return bool(found)
 
 
-def xyxy2xywh(xyxy: List[List[float]]):
+def xyxy2xywh(xyxy: List[Tuple[float, float, float, float]]) -> List[Tuple[float, float, float, float]]:
     """
     Convert to center coordinates [x_center, y_center, width, height]
     :param xyxy:
@@ -140,3 +144,19 @@ def xyxy2xywh(xyxy: List[List[float]]):
         y0 = y1 + h / 2
         x0y0wh.append([x0, y0, w, h])
     return x0y0wh
+
+
+def xywh2xyxy(xywh: List[Tuple[float, float, float, float]]) -> List[Tuple[float, float, float, float]]:
+    """
+    Convert from center coordinates [x_center, y_center, width, height]
+    :param xywh:
+    :return:
+    """
+    # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where xy1=top-left, xy2=bottom-right
+    xyxy = []
+    for x0, y0, w, h in xywh:
+        # to center coordinates
+        w2 = w / 2
+        h2 = h / 2
+        xyxy.append([x0 - w2, y0 - h2, x0 + w2, y0 + h2])
+    return xyxy
