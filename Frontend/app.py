@@ -1,20 +1,19 @@
 import streamlit as st
-import logging
-import sys
-from datetime import datetime
 
+from requests.exceptions import ConnectionError, HTTPError, Timeout, RequestException
 
 # custom packages
 from utils_streamlit import write_impress
 from communication import request_backend
 from utils_image import save_image, resize_image, base64_to_image
-from utils import get_logging_level
+from utils import setup_logging
 from config import get_config_from_environment_variables, get_page_title
 
 
+# Setup logging
 @st.cache_data
 def get_frontend_config():
-    return get_config_from_environment_variables()
+    return get_config_from_environment_variables(), setup_logging(__name__)
 
 
 @st.cache_data
@@ -39,7 +38,6 @@ def set_css_config():
     checkbox_size = 55
     checkbox_background_radius = int(checkbox_size / 6)
     checkbox_label_margin_top = int((checkbox_size / 2))
-    logging.debug("Loading CSS styles.")
     st.markdown(f"""
         <style>
             button {{
@@ -111,7 +109,7 @@ def main():
     set_css_config()
 
     # load configs
-    camera_info, photo_params, settings_backend, app_settings = get_frontend_config()
+    (camera_info, photo_params, settings_backend, app_settings), logger = get_frontend_config()
 
     # initialize session state
     if "image" not in st.session_state:
@@ -151,7 +149,7 @@ def main():
 
         toggle_boxes = st.toggle(
             **kwargs,
-            value=camera_triggered,
+            value=camera_triggered
         )
         # toggle_boxes = st.checkbox(
         #     **kwargs,
@@ -164,37 +162,62 @@ def main():
             "Overrule decision",
             help="Flags the image as wrongly classified",
             type="secondary",
-            disabled=st.session_state.button_overrule_disabled or st.session_state.image["overruled"],
+            disabled=(
+                             st.session_state.button_overrule_disabled or st.session_state.image["overruled"]
+                     ) and not camera_triggered,
             use_container_width=True
         )
 
     with columns[1]:
+        message_row = st.container()
         # processing
         scores = []
         if camera_triggered:
             reset_session_state_image()
+
             # call backend
+            content = {"images": None, "decision": None, "pattern_name": None, "pattern_lg": None}
             with st.spinner("Call backend to trigger the camera and evaluate the model ..."):
-                content = request_backend(
-                    address=app_settings.address_backend,
-                    camera_params=camera_info,
-                    photo_params=photo_params,
-                    settings=settings_backend,
-                    timeout=app_settings.timeout
-                )
+                try:
+                    content = request_backend(
+                        address=app_settings.address_backend,
+                        camera_params=camera_info,
+                        photo_params=photo_params,
+                        settings=settings_backend,
+                        timeout=app_settings.timeout
+                    )
+                except ConnectionError as ex:
+                    logger.error(f"Failed to connect to backend: {ex}")
+                    with message_row:
+                        st.error(f"Failed to connect to backend.", icon="🚨")
+                except Timeout:
+                    logger.error(f"Request to backend timed out.")
+                    with message_row:
+                        st.error(f"Request to backend timed out.", icon="🚨")
+                except HTTPError as ex:
+                    logger.error(f"An HTTPError occurred when requesting the backend.")
+                    with message_row:
+                        st.error(f"An HTTPError occurred when requesting the backend.", icon="🚨")
+                except RequestException as ex:
+                    logger.error(f"A RequestException occurred when requesting the backend: {ex}")
+                    with message_row:
+                        st.error(f"An error occurred when requesting the backend.", icon="🚨")
+                except Exception as ex:
+                    logger.error(f"An unexpected error occurred: {ex}")
 
             # keep image in session state
             images = content["images"]
-            image = base64_to_image(images["img"])
-            st.session_state.image["raw"] = image
-            st.session_state.image["show"] = resize_image(image, app_settings.image_size)
+            if images is not None:
+                image = base64_to_image(images["img"])
+                st.session_state.image["raw"] = image
+                st.session_state.image["show"] = resize_image(image, app_settings.image_size)
 
-            if "img_drawn" in images:
-                img_draw = base64_to_image(images["img_drawn"])
-                st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
-                st.session_state.show_bboxs = True
-            else:
-                st.session_state.image["bboxes"] = st.session_state.image["show"]
+                if "img_drawn" in images:
+                    img_draw = base64_to_image(images["img_drawn"])
+                    st.session_state.image["bboxes"] = resize_image(img_draw, app_settings.image_size)
+                    st.session_state.show_bboxs = True
+                else:
+                    st.session_state.image["bboxes"] = st.session_state.image["show"]
 
             if "results" in content:
                 result = content["results"]
@@ -206,21 +229,27 @@ def main():
             st.session_state.image["pattern_name"] = content["pattern_name"]
             st.session_state.image["pattern_lg"] = content["pattern_lg"]
 
+            st.session_state.button_overrule_disabled = False
+
+            # st.rerun()
+
         # always show decision
         if st.session_state.image["decision"]:
             msg = f"Bounding-Boxes found for pattern {st.session_state.image['pattern_name']}"
-            logging.debug(msg)
-            st.success(msg, icon="✅")
-            st.session_state.button_overrule_disabled = False
+            logger.debug(msg)
+            with message_row:
+                st.success(msg, icon="✅")
         elif st.session_state.image["show"] is not None:
             if st.session_state.image["pattern_lg"] is not None:
                 lg = st.session_state.image['pattern_lg']
                 msg = (f"Not all objects were found. "
                        f"Best pattern: {st.session_state.image['pattern_name']} with {sum(lg)} / {len(lg)}.")
-                logging.warning(msg)
-                st.error(msg, icon="🚨")
+                logger.warning(msg)
+                with message_row:
+                    st.error(msg, icon="🚨")
             else:
-                st.info("No pattern provided to check bounding-boxes.", icon="ℹ️")
+                with message_row:
+                    st.info("No pattern provided to check bounding-boxes.", icon="ℹ️")
                 st.session_state.button_overrule_disabled = True
 
     # show image
@@ -231,14 +260,16 @@ def main():
     # save image
     if overrule_decision:
         if st.session_state.image["path_to_saved_image"] is None:
-            path_to_img = save_image(st.session_state.image["raw"], app_settings.data_folder)
+            path_to_img = save_image(st.session_state.image["raw"], ".jpg", folder=app_settings.data_folder)
             # keep filename in session state to prevent that the image is saved twice
             st.session_state.image["path_to_saved_image"] = path_to_img
 
         # make sure that the image is not saved twice
         if overrule_decision:
             st.session_state.image["overruled"] = True
-            logging.info(f"Decision overruled for image {st.session_state.image['path_to_saved_image']}.")
+            logger.info(f"Decision overruled for image {st.session_state.image['path_to_saved_image']}.")
+            with message_row:
+                st.info("Decision was overruled.", icon="ℹ️")
 
     # impress
     if app_settings.impress:
@@ -246,16 +277,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # set logging level
-    logging.basicConfig(
-        level=get_logging_level(default=logging.DEBUG),
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            # logging.FileHandler(Path(get_env_variable("LOGFILE", "log")).with_suffix(".log")),
-            logging.StreamHandler(sys.stdout)
-        ],
-    )
-
     main()
 
     # streamlit run app.py
