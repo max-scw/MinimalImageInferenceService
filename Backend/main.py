@@ -156,7 +156,7 @@ def main(
             lg = scores >= settings.min_score
             scores = scores[lg].tolist()
             class_ids = np.asarray(class_ids)[lg].tolist()
-            bboxes = np.asarray(bboxes)[lg].tolist()
+            bboxes = np.asarray(bboxes)[lg].round(3).tolist()
             t5 = default_timer()
             logger.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
@@ -175,17 +175,18 @@ def main(
     logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 
     # ----- Plot bounding-boxes
-    img_draw = plot_bboxs(
-        img.convert("RGB"),
-        bboxes,
-        scores,
-        class_ids,
-        class_map=CLASS_MAP,
-        color_map=COLOR_MAP
-    )
-    # log execution time
-    t8 = default_timer()
-    logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
+    if return_options.img_drawn:
+        img_draw = plot_bboxs(
+            img.convert("RGB"),
+            bboxes,
+            scores,
+            class_ids,
+            class_map=CLASS_MAP,
+            color_map=COLOR_MAP
+        )
+        # log execution time
+        t8 = default_timer()
+        logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
 
     # ----- Check bounding-box pattern
     decision = None
@@ -219,7 +220,7 @@ def main(
 
         # Save image if applicable
         if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
-            note_to_saved_image = "failed"
+            note_to_saved_image = ["failed"]
     else:
         logger.info("No pattern provided to check bounding-boxes.")
     t9 = default_timer()

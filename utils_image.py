@@ -49,9 +49,9 @@ def save_image(
     if note is None:
         notes = []
     elif isinstance(note, str):
-        notes = [note]
+        notes = [""] + [note]
     elif isinstance(note, list):
-        notes = [f"{el}" for el in note]
+        notes = [""] + [f"{el}" for el in note]
     else:
         raise TypeError(f"Expecting input 'note' to be a string or a list of strings but was {type(note)}.")
 
