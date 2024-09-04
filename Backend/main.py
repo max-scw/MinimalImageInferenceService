@@ -10,8 +10,8 @@ import numpy as np
 from pathlib import Path
 import re
 
-# import os
-# os.environ["LOGGING_LEVEL"] = "DEBUG"
+import os
+os.environ["LOGGING_LEVEL"] = "DEBUG"
 
 from timeit import default_timer
 from threading import Thread
@@ -25,6 +25,7 @@ from utils import get_config, read_mappings_from_csv, setup_logging
 
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
+from utils_config import get_photo_parameter_from_config, get_basler_camera_parameter_from_config
 
 from DataModels import (
     SettingsMain,
@@ -108,8 +109,19 @@ def main(
     EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
 
     t0 = default_timer()
+    # join local parameter with config parameter
+    photo_params = PhotoParams(
+        **(
+                get_not_none_values(get_photo_parameter_from_config(CONFIG)) |
+                get_not_none_values(photo_params)
+        )
+    )
+    camera_params = (
+            get_not_none_values(get_basler_camera_parameter_from_config(CONFIG)) |
+            get_not_none_values(camera_params)
+    )
     # create local CameraInfo instance
-    camera_ = CameraInfo(url=CONFIG["CAMERA_URL"], **camera_params.dict())
+    camera_ = CameraInfo(url=CONFIG["CAMERA_URL"], **camera_params)
 
     t1 = default_timer()
     logger.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
@@ -198,7 +210,7 @@ def main(
     if pattern_key is None:
         pattern_key = DEFAULT_PATTERN_KEY
 
-    if pattern_key:
+    if pattern_key and bboxes:
         t8 = default_timer()
         decision, pattern_name, lg = _check_pattern(
             np.array(bboxes) / (img.size + img.size),

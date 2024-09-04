@@ -136,7 +136,18 @@ class ImageParams(BaseModel):
     rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", None)  # degree
     rotation_expand: Optional[bool] = None
     # image processing: crop
-    # roi: Optional[Tuple[float, float, float, float]] = default_from_env("REGION_OF_INTEREST", None)
+    roi_left: Optional[
+        Annotated[float, Field(strict=False, ge=0)]
+    ] = default_from_env("IMAGE_ROI_LEFT", None)
+    roi_top: Optional[
+        Annotated[float, Field(strict=False, ge=0)]
+    ] = default_from_env("IMAGE_ROI_TOP", None)
+    roi_right: Optional[
+        Annotated[float, Field(strict=False, ge=0)]
+    ] = default_from_env("IMAGE_ROI_RIGHT", None)
+    roi_bottom: Optional[
+        Annotated[float, Field(strict=False, ge=0)]
+    ] = default_from_env("IMAGE_ROI_BOTTOM", None)
 
 
 class PhotoParams(ImageParams):
