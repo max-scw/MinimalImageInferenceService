@@ -10,8 +10,8 @@ import numpy as np
 from pathlib import Path
 import re
 
-import os
-os.environ["LOGGING_LEVEL"] = "DEBUG"
+# import os
+# os.environ["LOGGING_LEVEL"] = "DEBUG"
 
 from timeit import default_timer
 from threading import Thread
@@ -121,7 +121,7 @@ def main(
 
         # log execution time
         t2 = default_timer()
-        logger.debug(f"Trigger camera took {(t2 - t1) * 1000:.4g} ms")
+        logger.debug(f"Calling the camera took {(t2 - t1) * 1000:.4g} ms")
 
     except (TimeoutError, ConnectionError):
         msg = "TimeoutError: trigger_camera(...). Camera not responding."
@@ -199,6 +199,7 @@ def main(
         pattern_key = DEFAULT_PATTERN_KEY
 
     if pattern_key:
+        t8 = default_timer()
         decision, pattern_name, lg = _check_pattern(
             np.array(bboxes) / (img.size + img.size),
             class_ids,
@@ -214,17 +215,18 @@ def main(
             logger.warning(msg)
 
             # visualize
-            if pattern_name:
+            if pattern_name and return_options.img_drawn:
                 pat_failed = [vl for ky, vl in zip(lg, PATTERNS[pattern_key][pattern_name]) if not ky]
                 img_draw = plot_bounds(img_draw, pat_failed)
 
         # Save image if applicable
         if CONFIG["GENERAL_SAVE_IMAGES_WITH_FAILED_PATTERN_CHECK"] and not decision:
             note_to_saved_image = ["failed"]
+
+        t9 = default_timer()
+        logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
     else:
         logger.info("No pattern provided to check bounding-boxes.")
-    t9 = default_timer()
-    logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
 
     # save image
     global counter
@@ -232,23 +234,20 @@ def main(
             (isinstance(CONFIG["GENERAL_SAVE_IMAGES"], str) and (CONFIG["GENERAL_SAVE_IMAGES"].lower() == "all")) or \
             (save_every_x and (counter % save_every_x == 0)):
         # start thread to save the image
-        Thread(target=save_image,
-               args=(
-                   img,
-                   photo_params.format,
-                   CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
-                   note_to_saved_image
-               )
-               ).start()
+        Thread(
+            target=save_image,
+            args=(
+                img,
+                photo_params.format,
+                CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
+                note_to_saved_image
+            )
+        ).start()
         # update metric
         SAVED_IMAGES.inc()
-    t10 = default_timer()
-    logger.debug(f"Starting thread to save image took {(t10 - t9) * 1000:.4g} ms")
 
     # ----- Return
-    # thread_draw.join()
-    # img_draw = thread_draw_result["output"]
-
+    t10 = default_timer()
     content = dict()
     if return_options.decision:
         content["decision"] = decision
@@ -277,6 +276,8 @@ def main(
 
     # increase global counter
     counter += 1
+
+    logger.debug(f"Call to {ENTRYPOINT_MAIN} took {(default_timer() - t0) * 1000:.4g} ms")
     return JSONResponse(content=content)
 
 
@@ -284,6 +285,7 @@ def main(
 @EXECUTION_TIMING[ENTRYPOINT_CHECK_PATTERN].time()
 @EXCEPTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].count_exceptions()
 async def check_pattern(request: PatternRequest):
+    t0 = default_timer()
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].inc()
 
@@ -305,6 +307,7 @@ async def check_pattern(request: PatternRequest):
         pattern=pattern
     )
 
+    logger.debug(f"Call to {ENTRYPOINT_CHECK_PATTERN} took {(default_timer() - t0) * 1000:.4g} ms")
     return JSONResponse(content={
         "decision": decision,
         "pattern_name": pattern_name,

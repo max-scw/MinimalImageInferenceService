@@ -64,6 +64,7 @@ EXECUTION_TIMING["onnx"] = Gauge(
 @app.post(ENTRYPOINT_INFERENCE)
 # Decorators do not work for async functions
 async def predict(image: UploadFile = File(...)):
+    t0 = default_timer()
     logger.debug(f"call {ENTRYPOINT_INFERENCE}")
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_INFERENCE].inc()
@@ -81,7 +82,7 @@ async def predict(image: UploadFile = File(...)):
         img_mdl = prepare_image(img, CONFIG["MODEL_IMAGE_SIZE"], CONFIG["MODEL_PRECISION"])
         logger.debug(f"Image shape, config: {CONFIG['MODEL_IMAGE_SIZE']}, prepared {img_mdl.shape}")
 
-        t0 = default_timer()
+        t1 = default_timer()
         input_name = ONNX_SESSION.get_inputs()[0].name
         output_name = ONNX_SESSION.get_outputs()[0].name
         with EXECUTION_TIMING["onnx"].time():
@@ -89,7 +90,7 @@ async def predict(image: UploadFile = File(...)):
                 output_names=[output_name],
                 input_feed={input_name: img_mdl}
             )
-        logger.debug(f"Inference took {(default_timer() - t0) / 1000:.2g} ms.")
+        logger.debug(f"Inference took {(default_timer() - t1) / 1000:.3g} ms.")
 
         logger.debug(f"len(results)={len(results)}; results[0].shape={results[0].shape}")
 
@@ -134,6 +135,7 @@ async def predict(image: UploadFile = File(...)):
             "class_ids": class_ids.tolist(),
             "scores": scores.round(3).tolist()
         }
+        logger.debug(f"Calling {ENTRYPOINT_INFERENCE} took {(default_timer() - t0) / 1000:.3g} ms.")
     return JSONResponse(content=content)
 
 
