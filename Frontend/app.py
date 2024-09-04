@@ -203,6 +203,8 @@ def main():
                     with message_row:
                         st.error(f"An error occurred when requesting the backend.", icon="🚨")
                 except Exception as ex:
+                    with message_row:
+                        st.error(f"An error occurred when requesting the backend.", icon="🚨")
                     logger.error(f"An unexpected error occurred: {ex}")
 
             # keep image in session state
