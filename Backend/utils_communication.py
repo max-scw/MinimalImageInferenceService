@@ -33,13 +33,21 @@ def trigger_camera(
     t1 = default_timer()
     logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000:.4g} ms)")
 
-    response = request_camera(url, timeout)
+    content = request_camera(url, timeout)
     t2 = default_timer()
     logger.debug(f"trigger_camera(): request_camera(url, timeout={timeout}) (took {(t2 - t1) * 1000:.4g} ms)")
-    return response
+    return content
 
 
 def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
+    """
+    Builds the url to call the BaslerCameraAdapter container
+    github project: https://github.com/max-scw/BaslerCameraAdapter
+    container: https://hub.docker.com/r/maxscw/baslercameraadapter
+    :param camera_info:
+    :param photo_params:
+    :return: formatted url
+    """
     params = {
         ky: vl for ky, vl in get_not_none_values(camera_info).items()
         if ky in BaslerCameraSettings.model_fields
