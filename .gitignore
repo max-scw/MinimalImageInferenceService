@@ -173,7 +173,10 @@ cython_debug/
 /FTP-Polling/
 
 */test.py
+*.txt
 /Backend/data/
 /Inference/data/
 /Frontend/data/
 /tools/export/
+/tools/export_crop/
+/tools/rotated/
