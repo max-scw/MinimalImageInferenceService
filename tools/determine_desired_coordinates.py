@@ -11,6 +11,8 @@ from typing import List, Tuple, Union, Dict
 
 
 from Backend.plot_pil import plot_one_box
+from utils.bboxes import xywh2xyxy, xyxy2xywh
+from utils.image import draw_rectangles
 
 
 def read_file(path_to_file: Path, suffix: str = None) -> list:
@@ -30,63 +32,6 @@ def read_label(path_to_file: Path, suffix: str = None):
     # cast labels to numerics
     return np.asarray([el.split(" ") for el in content], dtype=float)
 
-
-def xywh2xyxy(xywh: np.ndarray) -> np.ndarray:
-    if not isinstance(xywh, np.ndarray):
-        xywh = np.asarray(xywh)
-    if len(xywh.shape) > 1:
-        xy0 = xywh[:, :2]
-        wh2 = xywh[:, 2:] / 2
-    else:
-        xy0 = xywh[:2]
-        wh2 = xywh[2:] / 2
-
-    return np.hstack((xy0 - wh2, xy0 + wh2))
-
-
-def xyxy2xywh(xyxy: np.ndarray) -> np.ndarray:
-    xy1, xy2 = np.split(xyxy, 2)
-    wh = (xy2 - xy1)
-    xy0 = xy1 + wh / 2
-
-    return np.hstack((xy0, wh))
-
-
-def draw_rectangles(
-        img: Image,
-        xywh,
-        xywh_tol,
-        ids: List[int],
-        thickness: int = 2,
-        colormap: str = "tab10"
-) -> Image:
-    draw = ImageDraw.Draw(img)
-    # bounding box
-    xy = xywh[:, :2] * img.size
-    xy_tol = xywh_tol[:, :2] * img.size
-    centers = np.hstack((xy - xy_tol, xy + xy_tol))
-
-    wh = xywh[:, 2:] * img.size
-    wh_tol = xywh_tol[:, 2:] * img.size
-
-    center_size = np.hstack((xy - wh / 2 - wh_tol, xy + wh / 2 + wh_tol))
-
-    # get colormap
-    cmap = plt.get_cmap(colormap)
-    # Retrieve colors as a list of RGB tuples
-    colors = [cmap(i) for i in range(cmap.N)]
-    # convert to 255 scale
-    colors = (np.array(colors) * 255).astype(int)
-
-    for cid, color in zip(np.unique(ids), colors):
-        lg = cid == ids
-        for xyxy in centers[lg, :].round().astype(int).tolist():
-            draw.rectangle(xyxy, width=thickness, outline=tuple(color))
-
-        for xyxy in center_size[lg, :].round().astype(int).tolist():
-            draw.rectangle(xyxy, width=thickness, outline=tuple(color))
-
-    return img
 
 
 def prepare_labels(
@@ -217,6 +162,7 @@ if __name__ == "__main__":
     filename_predictions = "CRU_TrnVal4pattern_L*.txt"
     filename_reference = "CRU_TrnVal4pattern_OGL_L*.txt"
     path_to_files = Path()
+    path_to_image_folder= Path(r"C:\Users\schwmax\Proj\Coding\YOLOv7_scw\dataset\CRURotorAssembly\data_crop")
 
     filename_export = "desired_coordinates.yml"
 
@@ -228,8 +174,8 @@ if __name__ == "__main__":
         cls, bbox_min, bbox_max = determine_desired_coordinates(
             fl_prd,
             fl_ogl,
-            {0: 5, 2: 5, 3: 5},
-            Path(r"C:\Users\schwmax\Proj\Coding\YOLOv7_scw\dataset\CRURotorAssembly\data"),
+            {0: 20, 2: 25, 3: 25},
+            path_to_image_folder,
             [0, 2, 3]
         )
         # store data
