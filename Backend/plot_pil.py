@@ -48,7 +48,7 @@ def plot_one_box(
 
 def plot_bboxs(
         image: Union[np.ndarray, Image.Image],
-        bbox: np.ndarray,
+        bbox: np.ndarray,  # xyxy
         scores: Union[List[float], np.ndarray],
         classes: Union[List[int], np.ndarray],
         line_thickness: int = None,

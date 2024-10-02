@@ -68,8 +68,9 @@ def letterbox(
 
     # Compute padding
     new_unpad = (int(round(shape[1] * ratio[1])), int(round(shape[0] * ratio[0])))
-    dw = new_shape[1] - new_unpad[0]  # wh padding
-    dh = new_shape[0] - new_unpad[1]
+    dw = new_shape[1] - new_unpad[0]  # width padding
+    dh = new_shape[0] - new_unpad[1]  # height padding
+
     if auto:  # minimum rectangle
         dw, dh = np.mod(dw, stride), np.mod(dh, stride)  # wh padding
     elif scale_fill:  # stretch
@@ -171,3 +172,9 @@ def scale_coordinates_to_image_size(
     scaled_bboxs[:, 3] = bboxs[:, 3] * scale_y
 
     return scaled_bboxs
+
+
+if __name__ == "__main__":
+    img = cv2.imread("../../BaslerCameraAdapter/test_images/20240813_120110.jpg")
+
+    letterbox(img, new_shape=(544, 640))
