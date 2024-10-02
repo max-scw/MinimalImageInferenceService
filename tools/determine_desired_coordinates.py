@@ -11,8 +11,7 @@ from typing import List, Tuple, Union, Dict
 
 
 from Backend.plot_pil import plot_one_box
-from utils.bboxes import xywh2xyxy, xyxy2xywh
-from utils.image import draw_rectangles
+from tools.utils.bboxes import xywh2xyxy, xyxy2xywh
 
 
 def read_file(path_to_file: Path, suffix: str = None) -> list:
@@ -42,7 +41,7 @@ def prepare_labels(
     files_ogl = [Path(ln) for ln in read_file(path_to_file)]
 
     # cast to numeric
-    labels = [read_label(fl) for fl in files_ogl]
+    labels = [read_label(fl) for fl in files_ogl if fl.exists()]
     n_clusters = max([len(el) for el in labels])
     print(f"Using {n_clusters} clusters.")
     # flatten to get a list of data points
@@ -67,12 +66,13 @@ def determine_desired_coordinates(
     points_prd, _ = prepare_labels(path_to_predictions, filtered_classes)
 
     # fit k-means to determine the best cluster centers
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto", max_iter=300).fit(points_ogl)
-    cxywh = kmeans.cluster_centers_
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto", max_iter=300).fit(points_ogl / [n_clusters, 1, 1, 1, 1])
+    cxywh = kmeans.cluster_centers_ * [n_clusters, 1, 1, 1, 1]
 
     plt.plot(points_prd[:, 1], points_prd[:, 2], ".")
     # plt.plot(points_ogl[:, 1], points_ogl[:, 2], ".")
     plt.plot(cxywh[:, 1], cxywh[:, 2], "+")
+    plt.title(path_to_reference.stem)
     plt.show()
 
     # enforce positive integers as class ids
@@ -103,7 +103,7 @@ def determine_desired_coordinates(
         xywh_min_i = np.hstack((xy0, wh_min)).clip(0, 1)
         xywh_max_i = np.hstack((xy0, wh_max)).clip(0, 1)
 
-        # absolute min / max coordinates for inner / outer bboces
+        # absolute min / max coordinates for inner / outer bboxes
         xyxy = xywh2xyxy(xywh)
 
         xy1_outer, xy2_inner = np.split(xyxy.min(axis=0), 2)
@@ -149,7 +149,7 @@ def determine_desired_coordinates(
 
                 for box_xywh in np.vstack((xywh_min, xywh_max)):
                     box_xyxy = (np.hstack((box_xywh[:2] - box_xywh[2:] / 2, box_xywh[:2] + box_xywh[2:] / 2)) * (img.size * 2))
-                    plot_one_box(box_xyxy.round().astype(int).tolist(), draw, color=(255, 255, 255))
+                    plot_one_box(box_xyxy.round().astype(int).tolist(), draw, color=(255, 0, 0))
 
                 img.show()
                 # stop loop
