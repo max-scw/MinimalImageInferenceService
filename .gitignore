@@ -180,3 +180,10 @@ cython_debug/
 /tools/export/
 /tools/export_crop/
 /tools/rotated/
+/tools/tmp/
+/tools/*.yml
+/tools/*.yaml
+
+/docs/ogl/
+
+/Frontend/utils_streamlit/
