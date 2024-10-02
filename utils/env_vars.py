@@ -77,6 +77,8 @@ def cast(var: str) -> Union[None, int, float, str, bool]:
         var = True if var[0].lower() == "t" else False
     elif re_list_or_tuple_or_dict.match(var):
         var = literal_eval(var)
+    elif var.lower() == "none":
+        var = None
     elif re_comma.match(var):
         # strip enclosing high comma
         var = var.strip('"').strip('"')
