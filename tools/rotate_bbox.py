@@ -29,10 +29,9 @@ def rotate_bounding_boxes_180_normalized(bboxes):
 
 
 if __name__ == '__main__':
-    # folder = Path(r"C:\Users\schwmax\Proj\Coding\YOLOv7_scw\dataset\CRURotorAssembly\data_crop")
-    folder = Path(r"C:\Users\schwmax\Proj\Coding\YOLOv7_scw\dataset\CRURotorAssembly\data_crop")
+    folder = Path(r"export")
     files = list(folder.glob("*.txt"))
-    export_folder = Path("data_crop_rotated")
+    export_folder = Path("export_rotated")
     for fl in tqdm(files):
 
         labels = np.loadtxt(fl)
