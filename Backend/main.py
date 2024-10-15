@@ -10,8 +10,8 @@ import numpy as np
 from pathlib import Path
 import re
 
-import os
-os.environ["LOGGING_LEVEL"] = "DEBUG"
+# import os
+# os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
 
 from timeit import default_timer
 from threading import Thread
@@ -252,7 +252,8 @@ def main(
                 img,
                 photo_params.format,
                 CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
-                note_to_saved_image
+                note_to_saved_image,
+                CONFIG["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
             )
         ).start()
         # update metric

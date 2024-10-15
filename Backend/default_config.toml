@@ -33,3 +33,8 @@ mapping=""
 save_images="all"  # literal: "all", "every x", "no"
 save_images_with_failed_pattern_check=true
 folder_saved_images="data"
+image_quality=100
+
+[pattern]
+file="./data/desired_coordinates.yml"
+#default=

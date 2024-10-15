@@ -16,7 +16,7 @@ def bytes_to_image_pil(raw_image: bytes) -> Image:
 
 def image_to_base64(image: Image.Image) -> str:
     buffered = io.BytesIO()
-    image.save(buffered, format="JPEG")
+    image.save(buffered, format="JPEG", quality=quality)
     return base64.b64encode(buffered.getvalue()).decode()
 
 
@@ -44,7 +44,8 @@ def save_image(
         img: Image,
         image_extension: str,
         folder: Union[str, Path] = None,
-        note: Union[str, List[str]] = None
+        note: Union[str, List[str]] = None,
+        quality: int = 90
 ) -> Union[Path, None]:
     if note is None:
         notes = []
@@ -70,7 +71,7 @@ def save_image(
 
     # save image
     if not path_to_file.exists():
-        img.save(path_to_file.with_suffix(f".{extension}"))
+        img.save(path_to_file.with_suffix(f".{extension}"), quality=quality)
         return path_to_file
     else:
         return None
