@@ -11,8 +11,8 @@ from pathlib import Path
 import re
 from PIL import Image
 
-import os
-os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
+# import os
+# os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
 
 from timeit import default_timer
 from threading import Thread
@@ -73,9 +73,9 @@ ENTRYPOINT = "/"
 ENTRYPOINT_MAIN = ENTRYPOINT + "backend"
 ENTRYPOINT_MAIN_WITH_CAMERA = ENTRYPOINT_MAIN + "/with-camera"
 ENTRYPOINT_CHECK_PATTERN = ENTRYPOINT + "check-pattern"
-ENTRYPOINT_IMAGE = ENTRYPOINT + "last-image"
-ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "/raw"
-ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "/draw"
+ENTRYPOINT_IMAGE = ENTRYPOINT + "latest"
+ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "/image-raw"
+ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "/image-draw"
 
 # create fastAPI object
 title = "Backend"
@@ -115,7 +115,6 @@ async def main(
         image: UploadFile = File(...),
         image_params: ImageParams = Depends(),
         settings: SettingsMain = Depends(),
-        return_options: OptionsReturnValuesMain = Depends()
 ):
     # wait for file transmission
     image_bytes = await image.read()
@@ -123,15 +122,13 @@ async def main(
     return backend(
         img_bytes=image_bytes,
         image_params=image_params,
-        settings=settings,
-        return_options=return_options
+        settings=settings
     )
 
 def backend(
         img_bytes,
         image_params: ImageParams = Depends(),
         settings: SettingsMain = Depends(),
-        return_options: OptionsReturnValuesMain = Depends()
 ):
     t0 = default_timer()
 
@@ -142,6 +139,8 @@ def backend(
                 get_not_none_values(image_params)
         )
     )
+    # setup return options
+    return_options = ReturnValuesMain(settings.return_options)
 
     # ----- Inference backend
     bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
@@ -190,7 +189,7 @@ def backend(
     latest_image_raw  = img
 
     # ----- Plot bounding-boxes
-    if return_options.img_drawn:
+    if ReturnValuesMain.IMAGE_DRAWN in return_options:
         img_draw = plot_bboxs(
             img.convert("RGB"),
             bboxes,
@@ -233,7 +232,7 @@ def backend(
             logger.warning(msg)
 
             # visualize
-            if pattern_name and return_options.img_drawn:
+            if pattern_name and (ReturnValuesMain.IMAGE_DRAWN in return_options):
                 pat_failed = [vl for ky, vl in zip(lg, PATTERNS[pattern_key][pattern_name]) if not ky]
                 img_draw = plot_bounds(img_draw, pat_failed)
 
@@ -268,29 +267,31 @@ def backend(
     # ----- Return
     t10 = default_timer()
     content = dict()
-    if return_options.decision:
+    if ReturnValuesMain.DECISION in return_options:
         content["decision"] = decision
-    if return_options.pattern_name:
+    if ReturnValuesMain.PATTERN_NAME in return_options:
         content["pattern_name"] = pattern_name
         content["pattern_lg"] = lg
 
-    if return_options.img or return_options.img_drawn:
+    if (ReturnValuesMain.IMAGE in return_options) or (ReturnValuesMain.IMAGE_DRAWN in return_options):
         content["images"] = dict()
 
         image_quality = CONFIG["CAMERA_IMAGE_QUALITY"] \
             if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
-        if return_options.img:
+        if ReturnValuesMain.IMAGE in return_options:
             content["images"]["img"] = image_to_base64(img, image_quality)
-        if return_options.img_drawn:
+        if ReturnValuesMain.IMAGE_DRAWN in return_options:
             content["images"]["img_drawn"] = image_to_base64(img_draw, image_quality)
 
-    if return_options.bboxes or return_options.class_ids or return_options.scores:
+    if ((ReturnValuesMain.BBOXES in return_options) or
+            (ReturnValuesMain.CLASS_IDS in return_options) or
+            (ReturnValuesMain.SCORES in return_options)):
         content["results"] = dict()
-        if return_options.bboxes:
+        if ReturnValuesMain.BBOXES in return_options:
             content["results"]["bboxes"] = bboxes
-        if return_options.class_ids:
+        if ReturnValuesMain.CLASS_IDS in return_options:
             content["results"]["class_ids"] = class_ids
-        if return_options.scores:
+        if ReturnValuesMain.SCORES in return_options:
             content["results"]["scores"] = scores
 
     t11 = default_timer()
@@ -309,13 +310,11 @@ def backend(
 def main_with_camera(
         camera_params: BaslerCameraSettings = Depends(),
         photo_params: PhotoParams = Depends(),
-        settings: SettingsMain = Depends(),
-        return_options: OptionsReturnValuesMain = Depends()
+        settings: SettingsMain = Depends()
 ):
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
 
-    t0 = default_timer()
     # join local parameter with config parameter
     photo_params = PhotoParams(
         **(
@@ -359,8 +358,7 @@ def main_with_camera(
     return backend(
         img_bytes=img_bytes,
         image_params=ImageParams.model_validate(photo_params.model_dump()),
-        settings=settings,
-        return_options=return_options,
+        settings=settings
     )
 
 
