@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from enum import Flag, auto
 
 from pathlib import Path
 
@@ -35,20 +36,23 @@ class CameraInfo(BaslerCameraSettings):
 
 
 # ----- Main
+class ReturnValuesMain(Flag):
+    DECISION = auto()
+    PATTERN_NAME = auto()
+    IMAGE = auto()
+    IMAGE_DRAWN = auto()
+    # details
+    BBOXES = auto()
+    CLASS_IDS = auto()
+    SCORES = auto()
+    
+    def __int__(self) -> int:
+        return self.value
+
 class SettingsMain(BaseModel):
     pattern_key: Optional[str] = None
     min_score: Optional[Annotated[float, Field(strict=False, le=1, ge=0)]] = 0.5
-
-
-class OptionsReturnValuesMain(BaseModel):
-    decision: Optional[bool] = True
-    pattern_name: Optional[bool] = True
-    img: Optional[bool] = True
-    img_drawn: Optional[bool] = True
-    # details
-    bboxes: Optional[bool] = False
-    class_ids: Optional[bool] = False
-    scores: Optional[bool] = False
+    return_options: Optional[Annotated[int, Field(strict=False, le=int(~ReturnValuesMain(0)), ge=0)]] = int(~ReturnValuesMain(0))
 
 
 # ----- Pattern-Check

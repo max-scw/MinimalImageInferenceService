@@ -34,10 +34,10 @@ from utils_config import (
 from DataModels import (
     SettingsMain,
     CameraInfo,
-    OptionsReturnValuesMain,
     ResultInference,
     PatternRequest,
     Pattern,
+    ReturnValuesMain
 )
 from DataModels_BaslerCameraAdapter import (
     PhotoParams,
