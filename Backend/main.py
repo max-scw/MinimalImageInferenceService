@@ -148,7 +148,7 @@ def main(
     # ----- Inference backend
     bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
     try:
-        address = CONFIG["INFERENCE_URL"]
+        address = CONFIG["INFERENCE_URL"] if "INFERENCE_URL" in CONFIG else None
         if address:
             logger.debug(f"Request model inference backend at {address}")
             result: ResultInference = request_model_inference(
@@ -270,10 +270,13 @@ def main(
 
     if return_options.img or return_options.img_drawn:
         content["images"] = dict()
+
+        image_quality = CONFIG["CAMERA_IMAGE_QUALITY"] \
+            if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
         if return_options.img:
-            content["images"]["img"] = image_to_base64(img)
+            content["images"]["img"] = image_to_base64(img, image_quality)
         if return_options.img_drawn:
-            content["images"]["img_drawn"] = image_to_base64(img_draw)
+            content["images"]["img_drawn"] = image_to_base64(img_draw, image_quality)
 
     if return_options.bboxes or return_options.class_ids or return_options.scores:
         content["results"] = dict()
