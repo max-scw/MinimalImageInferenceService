@@ -1,7 +1,8 @@
 from DataModels_BaslerCameraAdapter import (
     PhotoParams,
     BaslerCameraSettings,
-    get_not_none_values
+    get_not_none_values,
+    ImageParams
 )
 from typing import Union, List, Tuple, Dict, Any
 
@@ -30,20 +31,11 @@ def get_photo_parameter_from_config(config: Dict[str, Any]) -> PhotoParams:
         # exposure_time_microseconds: Optional[int] = 10000
         # communication
         timeout=config["CAMERA_TIMEOUT"] if isinstance(config["CAMERA_TIMEOUT"], int) else None,
-        # image
-        format=config["CAMERA_IMAGE_FORMAT"] if "CAMERA_IMAGE_FORMAT" in config else None,
-        quality=config["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in config else None,
         # debugging
         emulate_camera=config["CAMERA_EMULATE_CAMERA"] if "CAMERA_EMULATE_CAMERA" in config else None,
-        # rotate
-        rotation_angle=config["CAMERA_IMAGE_ROTATION_ANGLE"] if "CAMERA_IMAGE_ROTATION_ANGLE" in config else None,
-        rotation_expand=config["CAMERA_IMAGE_ROTATION_EXPAND"] if "CAMERA_IMAGE_ROTATION_EXPAND" in config else None,
-        # crop
-        roi_left=config["CAMERA_IMAGE_ROI_LEFT"] if "CAMERA_IMAGE_ROI_LEFT" in config else None,
-        roi_top=config["CAMERA_IMAGE_ROI_TOP"] if "CAMERA_IMAGE_ROI_TOP" in config else None,
-        roi_right=config["CAMERA_IMAGE_ROI_RIGHT"] if "CAMERA_IMAGE_ROI_RIGHT" in config else None,
-        roi_bottom=config["CAMERA_IMAGE_ROI_BOTTOM"] if "CAMERA_IMAGE_ROI_BOTTOM" in config else None,
-        )
+        # image parameter
+        **get_image_parameter_from_config(config).model_dump()
+)
     # set exposure time if environment variable exists and has a valid format
     exposure_time_microseconds = None
     for ky in ["CAMERA_EXPOSURE_TIME", "CAMERA_EXPOSURE_TIME_MICROSECONDS"]:
@@ -53,3 +45,20 @@ def get_photo_parameter_from_config(config: Dict[str, Any]) -> PhotoParams:
         photo_params.exposure_time_microseconds = exposure_time_microseconds
 
     return photo_params
+
+
+def get_image_parameter_from_config(config: Dict[str, Any]) -> ImageParams:
+    return ImageParams(
+        # image
+        format=config["CAMERA_IMAGE_FORMAT"] if "CAMERA_IMAGE_FORMAT" in config else None,
+        quality=config["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in config else None,
+        # rotate
+        rotation_angle=config["CAMERA_IMAGE_ROTATION_ANGLE"] if "CAMERA_IMAGE_ROTATION_ANGLE" in config else None,
+        rotation_expand=config["CAMERA_IMAGE_ROTATION_EXPAND"] if "CAMERA_IMAGE_ROTATION_EXPAND" in config else None,
+        # crop
+        roi_left=config["CAMERA_IMAGE_ROI_LEFT"] if "CAMERA_IMAGE_ROI_LEFT" in config else None,
+        roi_top=config["CAMERA_IMAGE_ROI_TOP"] if "CAMERA_IMAGE_ROI_TOP" in config else None,
+        roi_right=config["CAMERA_IMAGE_ROI_RIGHT"] if "CAMERA_IMAGE_ROI_RIGHT" in config else None,
+        roi_bottom=config["CAMERA_IMAGE_ROI_BOTTOM"] if "CAMERA_IMAGE_ROI_BOTTOM" in config else None,
+        )
+

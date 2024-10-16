@@ -96,7 +96,7 @@ TransmissionType = Literal["Unicast", "Multicast", "Broadcast"]
 def get_not_none_values(params: BaseModel) -> Dict[str, Any]:
     """returns the parameter of a Data Model but ignores keys that indicate undefined values."""
     return {
-        ky: vl for ky, vl in params.dict().items()
+        ky: vl for ky, vl in params.model_dump().items()
         if not ((vl is None) or (isinstance(vl, str) and vl in ("null", "None", "Undefined")))
     }
 

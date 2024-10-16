@@ -11,8 +11,8 @@ from pathlib import Path
 import re
 from PIL import Image
 
-# import os
-# os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
+import os
+os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
 
 from timeit import default_timer
 from threading import Thread
@@ -26,8 +26,11 @@ from utils import get_config, read_mappings_from_csv, setup_logging
 
 from utils_communication import trigger_camera, request_model_inference
 from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
-from utils_config import get_photo_parameter_from_config, get_basler_camera_parameter_from_config
-
+from utils_config import (
+    get_photo_parameter_from_config,
+    get_basler_camera_parameter_from_config,
+    get_image_parameter_from_config
+)
 from DataModels import (
     SettingsMain,
     CameraInfo,
@@ -39,7 +42,8 @@ from DataModels import (
 from DataModels_BaslerCameraAdapter import (
     PhotoParams,
     BaslerCameraSettings,
-    get_not_none_values
+    get_not_none_values,
+    ImageParams
 )
 
 
@@ -66,7 +70,8 @@ save_every_x = int(m.group()) if m else None
 
 # entry points
 ENTRYPOINT = "/"
-ENTRYPOINT_MAIN = ENTRYPOINT + "main"
+ENTRYPOINT_MAIN = ENTRYPOINT + "backend"
+ENTRYPOINT_MAIN_WITH_CAMERA = ENTRYPOINT_MAIN + "/with-camera"
 ENTRYPOINT_CHECK_PATTERN = ENTRYPOINT + "check-pattern"
 ENTRYPOINT_IMAGE = ENTRYPOINT + "last-image"
 ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "/raw"
@@ -81,7 +86,7 @@ app = default_fastapi_setup(title, summary)
 # set up /metrics endpoint for prometheus
 EXECUTION_COUNTER, EXCEPTION_COUNTER, EXECUTION_TIMING = setup_prometheus_metrics(
     app,
-    entrypoints_to_track=[ENTRYPOINT_MAIN, ENTRYPOINT_CHECK_PATTERN]
+    entrypoints_to_track=[ENTRYPOINT_MAIN, ENTRYPOINT_CHECK_PATTERN, ENTRYPOINT_MAIN_WITH_CAMERA]
 )
 DECISION = {
     vl: Counter(
@@ -106,63 +111,49 @@ latest_image_draw = None
 @app.get(ENTRYPOINT_MAIN)
 @EXECUTION_TIMING[ENTRYPOINT_MAIN].time()
 @EXCEPTION_COUNTER[ENTRYPOINT_MAIN].count_exceptions()
-def main(
-        camera_params: BaslerCameraSettings = Depends(),
-        photo_params: PhotoParams = Depends(),
+async def main(
+        image: UploadFile = File(...),
+        image_params: ImageParams = Depends(),
         settings: SettingsMain = Depends(),
         return_options: OptionsReturnValuesMain = Depends()
 ):
-    # increment counter for /metrics endpoint
-    EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
+    # wait for file transmission
+    image_bytes = await image.read()
 
+    return backend(
+        img_bytes=image_bytes,
+        image_params=image_params,
+        settings=settings,
+        return_options=return_options
+    )
+
+def backend(
+        img_bytes,
+        image_params: ImageParams = Depends(),
+        settings: SettingsMain = Depends(),
+        return_options: OptionsReturnValuesMain = Depends()
+):
     t0 = default_timer()
+
     # join local parameter with config parameter
-    photo_params = PhotoParams(
+    image_params = ImageParams(
         **(
-                get_not_none_values(get_photo_parameter_from_config(CONFIG)) |
-                get_not_none_values(photo_params)
+                get_not_none_values(get_image_parameter_from_config(CONFIG)) |
+                get_not_none_values(image_params)
         )
     )
-    camera_params = (
-            get_not_none_values(get_basler_camera_parameter_from_config(CONFIG)) |
-            get_not_none_values(camera_params)
-    )
-    # create local CameraInfo instance
-    camera_ = CameraInfo(url=CONFIG["CAMERA_URL"], **camera_params)
-
-    t1 = default_timer()
-    logger.debug(f"CameraInfo object built: {camera_} (took {(t1 - t0) * 1000:.4g} ms)")
-
-    # ----- Camera
-    try:
-        # trigger camera
-        img_bytes = trigger_camera(camera_, photo_params, timeout=CONFIG["CAMERA_TIMEOUT"])
-
-        # log execution time
-        t2 = default_timer()
-        logger.debug(f"Calling the camera took {(t2 - t1) * 1000:.4g} ms")
-
-    except (TimeoutError, ConnectionError):
-        msg = "TimeoutError: trigger_camera(...). Camera not responding."
-        logger.error(msg)
-        raise HTTPException(status_code=408, detail=msg)
-    except Exception as e:
-        msg = f"Fatal error at camera backend: {e}"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
-
-    t3 = default_timer()
 
     # ----- Inference backend
     bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
     try:
-        address = CONFIG["INFERENCE_URL"] if "INFERENCE_URL" in CONFIG else None
-        if address:
-            logger.debug(f"Request model inference backend at {address}")
+        address_inference = CONFIG["INFERENCE_URL"] if "INFERENCE_URL" in CONFIG else None
+        if address_inference:
+            t3 = default_timer()
+            logger.debug(f"Request model inference backend at {address_inference}")
             result: ResultInference = request_model_inference(
-                address=address,
+                address=address_inference,
                 image_raw=img_bytes,
-                extension=photo_params.format,
+                extension=image_params.format,
                 timeout=CONFIG["INFERENCE_TIMEOUT"]
             )
             bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
@@ -265,7 +256,7 @@ def main(
             target=save_image,
             args=(
                 img,
-                photo_params.format,
+                image_params.format,
                 CONFIG["GENERAL_FOLDER_SAVED_IMAGES"],
                 note_to_saved_image,
                 CONFIG["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
@@ -310,6 +301,67 @@ def main(
 
     logger.debug(f"Call to {ENTRYPOINT_MAIN} took {(default_timer() - t0) * 1000:.4g} ms")
     return JSONResponse(content=content)
+
+
+@app.get(ENTRYPOINT_MAIN_WITH_CAMERA)
+@EXECUTION_TIMING[ENTRYPOINT_MAIN_WITH_CAMERA].time()
+@EXCEPTION_COUNTER[ENTRYPOINT_MAIN_WITH_CAMERA].count_exceptions()
+def main_with_camera(
+        camera_params: BaslerCameraSettings = Depends(),
+        photo_params: PhotoParams = Depends(),
+        settings: SettingsMain = Depends(),
+        return_options: OptionsReturnValuesMain = Depends()
+):
+    # increment counter for /metrics endpoint
+    EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
+
+    t0 = default_timer()
+    # join local parameter with config parameter
+    photo_params = PhotoParams(
+        **(
+                get_not_none_values(get_photo_parameter_from_config(CONFIG)) |
+                get_not_none_values(photo_params)
+        )
+    )
+
+    address_camera = CONFIG["CAMERA_URL"] if "CAMERA_URL" in CONFIG else None
+    if address_camera:
+        # build camera parameter object
+        camera_params = (
+                get_not_none_values(get_basler_camera_parameter_from_config(CONFIG)) |
+                get_not_none_values(camera_params)
+        )
+        # create local CameraInfo instance
+        camera_ = CameraInfo(url=address_camera, **camera_params)
+    else:
+        msg = f"No address to a camera was provided. Please specify a URL by the environment variable 'CAMERA_URL'."
+        logger.debug(msg)
+        raise HTTPException(status_code=400, detail=msg)
+
+    # ----- Camera
+    try:
+        # trigger camera
+        t1 = default_timer()
+        img_bytes = trigger_camera(camera_, photo_params, timeout=CONFIG["CAMERA_TIMEOUT"])
+
+        # log execution time
+        t2 = default_timer()
+        logger.debug(f"Calling the camera ({camera_}) took {(t2 - t1) * 1000:.4g} ms")
+    except (TimeoutError, ConnectionError):
+        msg = "TimeoutError: trigger_camera(...). Camera not responding."
+        logger.error(msg)
+        raise HTTPException(status_code=408, detail=msg)
+    except Exception as e:
+        msg = f"Fatal error at camera backend: {e}"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
+
+    return backend(
+        img_bytes=img_bytes,
+        image_params=ImageParams.model_validate(photo_params.model_dump()),
+        settings=settings,
+        return_options=return_options,
+    )
 
 
 @app.post(ENTRYPOINT_CHECK_PATTERN)
