@@ -1,5 +1,5 @@
 # from fastapi_offline import FastAPIOffline as FastAPI
-from fastapi import File, UploadFile, HTTPException, Depends
+from fastapi import File, UploadFile, HTTPException, Depends, Response
 from fastapi.responses import JSONResponse
 import uvicorn
 from prometheus_client import Counter, Gauge
@@ -9,6 +9,7 @@ from requests.exceptions import ConnectionError
 import numpy as np
 from pathlib import Path
 import re
+from PIL import Image
 
 # import os
 # os.environ["LOGGING_LEVEL"] = "DEBUG"  # FIXME: for debugging only
@@ -19,7 +20,7 @@ from threading import Thread
 # custom packages
 from plot_pil import plot_bboxs, plot_bounds
 from check_boxes import check_boxes, get_patterns_from_config
-from utils_image import image_to_base64, bytes_to_image_pil, save_image
+from utils_image import image_to_base64, bytes_to_image_pil, save_image, image_pil_to_buffer
 
 from utils import get_config, read_mappings_from_csv, setup_logging
 
@@ -67,6 +68,9 @@ save_every_x = int(m.group()) if m else None
 ENTRYPOINT = "/"
 ENTRYPOINT_MAIN = ENTRYPOINT + "main"
 ENTRYPOINT_CHECK_PATTERN = ENTRYPOINT + "check-pattern"
+ENTRYPOINT_IMAGE = ENTRYPOINT + "last-image"
+ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "/raw"
+ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "/draw"
 
 # create fastAPI object
 title = "Backend"
@@ -94,6 +98,9 @@ SAVED_IMAGES = Counter(
 
 # initialize counter
 counter = 0
+# initialize global variables
+latest_image_raw = None
+latest_image_draw = None
 
 
 @app.get(ENTRYPOINT_MAIN)
@@ -145,6 +152,7 @@ def main(
         raise HTTPException(status_code=400, detail=msg)
 
     t3 = default_timer()
+
     # ----- Inference backend
     bboxes, scores, class_ids = [(0, 0, 0, 0)], [0], [0]  # initialize default values
     try:
@@ -186,6 +194,10 @@ def main(
     t7 = default_timer()
     logger.debug(f"Image object from bytes took {(t7 - t6) * 1000:.4g} ms")
 
+    # update global variable
+    global latest_image_raw
+    latest_image_raw  = img
+
     # ----- Plot bounding-boxes
     if return_options.img_drawn:
         img_draw = plot_bboxs(
@@ -199,6 +211,9 @@ def main(
         # log execution time
         t8 = default_timer()
         logger.debug(f"Plot bounding boxes took {(t8 - t7) * 1000:.4g} ms")
+
+        global latest_image_draw
+        latest_image_draw = img_draw
 
     # ----- Check bounding-box pattern
     decision = None
@@ -349,6 +364,27 @@ def _check_pattern(
     # increment counter for custom metric
     DECISION[decision].inc()
     return decision, pattern_name, lg
+
+
+@app.get(ENTRYPOINT_IMAGE_RAW)
+def return_latest_image_raw():
+    global latest_image_raw
+    return return_image(latest_image_raw)
+
+
+def return_image(image: Union[Image, None]):
+    # Return the latest image
+    if image is not None:
+        image_quality = CONFIG["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
+        return Response(content=image_pil_to_buffer(image, image_quality), media_type="image/jpeg")
+    else:
+        return Response(content="No image captured yet", media_type="text/plain")
+
+
+@app.get(ENTRYPOINT_IMAGE_DRAW)
+def return_latest_image_draw():
+    global latest_image_draw
+    return return_image(latest_image_draw)
 
 
 if __name__ == "__main__":

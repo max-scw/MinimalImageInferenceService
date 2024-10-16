@@ -14,7 +14,13 @@ def bytes_to_image_pil(raw_image: bytes) -> Image:
     return Image.open(io.BytesIO(img_ary))
 
 
-def image_to_base64(image: Image.Image) -> str:
+def image_pil_to_buffer(image: Image, quality: int) -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG", quality=quality)
+    return buffer.getvalue()
+
+
+def image_to_base64(image: Image.Image, quality: int) -> str:
     buffered = io.BytesIO()
     image.save(buffered, format="JPEG", quality=quality)
     return base64.b64encode(buffered.getvalue()).decode()
