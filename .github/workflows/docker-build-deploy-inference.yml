@@ -29,12 +29,12 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: maxscw/minimal-image-inference-engine
-          tags: >
+          tags: |
             latest
             engine
-            $${{ github.sha }}
-            $${{ env.SHORT_COMMIT }}
-            $${{ env.CURRENT_DATE }}
+            date-$${{ github.sha }}
+            sha-$${{ env.SHORT_COMMIT }}
+            sha-$${{ env.CURRENT_DATE }}
             v0.2
 
       - name: Login to Docker Hub
