@@ -13,18 +13,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Get current date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: maxscw/minimal-image-inference-frontend
           tags: |
             latest
-            frontend
-            $(date +'%Y-%m-%d')
-            $GITHUB_SHA
+            backend
+            ${{ github.repository }}:${{ env.CURRENT_DATE }}
+            ${{ github.repository }}:${{ github.sha }}
+            ${{ github.repository }}:${{ github.sha:0:7 }}
             v0.2
 
       - name: Login to Docker Hub
@@ -34,7 +38,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Frontend.Dockerfile
