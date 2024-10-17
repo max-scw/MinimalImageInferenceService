@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - release
-  paths:
-    - .github/workflows/docker-build-deploy-backend.yml
+    paths:
+      - .github/workflows/docker-build-deploy-backend.yml
 
 env:
   IMAGE_NAME: ${{ github.repository }}
