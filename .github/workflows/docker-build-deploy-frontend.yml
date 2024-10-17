@@ -18,6 +18,9 @@ jobs:
       - name: Get current date
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
+      - name: Get short commit hash
+        run: echo "SHORT_COMMIT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -28,7 +31,7 @@ jobs:
             backend
             ${{ github.repository }}:${{ env.CURRENT_DATE }}
             ${{ github.repository }}:${{ github.sha }}
-            ${{ github.repository }}:${{ github.sha:0:7 }}
+            ${{ github.repository }}:${{ env.SHORT_COMMIT }}
             v0.2
 
       - name: Login to Docker Hub
