@@ -19,10 +19,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: maxscw/minimal-image-inference-backend
+          images: maxscw/minimal-image-inference-frontend
           tags: |
             latest
-            backend
+            frontend
             $(date +'%Y-%m-%d')
             $GITHUB_SHA
             v0.2
@@ -37,7 +37,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: Backend.Dockerfile
+          file: Frontend.Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
