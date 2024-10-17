@@ -2,7 +2,10 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "release" ]
+    branches:
+      - release
+  paths:
+    - .github/workflows/docker-build-deploy-frontend.yml
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -28,10 +31,10 @@ jobs:
           images: maxscw/minimal-image-inference-frontend
           tags: |
             latest
-            backend
-            ${{ github.repository }}:${{ env.CURRENT_DATE }}
-            ${{ github.repository }}:${{ github.sha }}
-            ${{ github.repository }}:${{ env.SHORT_COMMIT }}
+            frontend
+            $${{ env.CURRENT_DATE }}
+            $${{ github.sha }}
+            $${{ env.SHORT_COMMIT }}
             v0.2
 
       - name: Login to Docker Hub

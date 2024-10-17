@@ -2,7 +2,10 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "release" ]
+    branches:
+      - release
+  paths:
+    - .github/workflows/docker-build-deploy-backend.yml
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -13,18 +16,25 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Get current date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Get short commit hash
+        run: echo "SHORT_COMMIT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: maxscw/minimal-image-inference-backend
           tags: |
             latest
             backend
-            $(date +'%Y-%m-%d')
-            $GITHUB_SHA
+            $${{ env.CURRENT_DATE }}
+            $${{ github.sha }}
+            $${{ env.SHORT_COMMIT }}
             v0.2
 
       - name: Login to Docker Hub
@@ -34,7 +44,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Backend.Dockerfile
