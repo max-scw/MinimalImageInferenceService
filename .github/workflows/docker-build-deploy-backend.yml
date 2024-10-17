@@ -32,9 +32,9 @@ jobs:
           tags: |
             latest
             backend
-            $${{ env.CURRENT_DATE }}
-            $${{ github.sha }}
-            $${{ env.SHORT_COMMIT }}
+            sha$${{ github.sha }}
+            sha$${{ env.SHORT_COMMIT }}
+            date$${{ env.CURRENT_DATE }}
             v0.2
 
       - name: Login to Docker Hub
