@@ -7,7 +7,7 @@ from typing import Union, Dict, List, Any
 import logging
 
 
-from DataModels import OptionsReturnValuesMain, SettingsMain
+from DataModels import ReturnValuesMain, SettingsMain
 from DataModels_BaslerCameraAdapter import BaslerCameraSettings, PhotoParams
 
 
@@ -22,7 +22,7 @@ def build_url(
         address = "http://" + address
 
     # return options
-    return_options = OptionsReturnValuesMain(
+    return_options = ReturnValuesMain(
         decision=True,
         pattern_name=True,
         img=True,
