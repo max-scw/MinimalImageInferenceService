@@ -1,7 +1,7 @@
 prefix="BE"
 
 [inference]
-url="http://inference:5050/inference"
+#url="http://inference:5050/inference"
 #url="http://localhost:5052/inference"
 timeout=2  # seconds
 
@@ -10,8 +10,8 @@ timeout=2  # seconds
 url="http://camera-adapter:5050/basler/single-frame-acquisition/take-photo"
 #url="http://localhost:5051/basler/single-frame-acquisition/take-photo"
 
-serial_number=0
-ip_address="1.1.1.1"
+serial_number=""
+ip_address=""
 emulate_camera=true
 #transmission_type=
 #destination_ip_address=
@@ -20,9 +20,10 @@ timeout=4  # seconds
 image_extension=".jpg"
 #pixel_format="Mono"
 
-[image]
+[camera.image]
 #format="jpg"
 #quality=75
+#rotation_angle=180
 
 [model]
 folder_head="./"
@@ -36,5 +37,5 @@ folder_saved_images="data"
 image_quality=100
 
 [pattern]
-file="./data/desired_coordinates.yml"
+file="./data/"
 #default=
