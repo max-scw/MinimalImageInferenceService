@@ -48,11 +48,12 @@ def load_patterns(path_to_pattern: Union[str, Path]) -> dict:
 
     if path_to_pattern.is_dir():
         # find all YAML files
-        files = [p for p in path_to_pattern.rglob("*") if p.suffix in extensions]
-    elif path_to_pattern.is_file() and (path_to_pattern.suffix in extensions):
+        files = [p for p in path_to_pattern.rglob("*") if p.suffix.lower() in extensions]
+    elif path_to_pattern.is_file() and (path_to_pattern.suffix.lower() in extensions):
         files = [path_to_pattern]
     else:
-        raise FileNotFoundError(f"No YAML files found in {path_to_pattern}")
+        files = []
+        warnings.warn(f"No YAML files found in {path_to_pattern}")
 
     patterns = dict()
     for fl in files:

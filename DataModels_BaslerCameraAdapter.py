@@ -91,7 +91,8 @@ PixelType = Literal[
 OutputImageFormat = Literal["RGB", "BGR", "Mono", "null"]
 AcquisitionMode = Literal["SingleFrame", "Continuous"]
 TransmissionType = Literal["Unicast", "Multicast", "Broadcast"]
-
+TriggerMode = Literal["FrameStart", "FrameEnd", "FrameActive", "AcquisitionStart", "FrameBurstEnd", "FrameBurstActive", "ExposureStart", "ExposureEnd", "ExposureActive", "LineStart", "Start", "End", "Active"]
+TriggerActivation = Literal["RisingEdge", "FallingEdge", "AnyEdge", "LevelHigh", "LevelLow"]
 
 def get_not_none_values(params: BaseModel) -> Dict[str, Any]:
     """returns the parameter of a Data Model but ignores keys that indicate undefined values."""
@@ -104,55 +105,74 @@ def get_not_none_values(params: BaseModel) -> Dict[str, Any]:
 class BaslerCameraAtom(BaseModel):
     serial_number: Optional[int] = default_from_env("SERIAL_NUMBER", None)
     ip_address: Optional[str] = default_from_env("IP_ADDRESS", None)
-    subnet_mask: Optional[str] = default_from_env("SUBNET_MASK", None)
+
+    # emulate_camera: bool = default_from_env("EMULATE_CAMERA", False)
 
 
-class BaslerCameraSettings(BaslerCameraAtom):
-    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", None)
+class CameraCommunication(BaseModel):
+    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", "Unicast")
     destination_ip_address: Optional[str] = default_from_env("DESTINATION_IP_ADDRESS", None)
     destination_port: Optional[
         Annotated[int, Field(strict=False, le=653535, ge=26)]  # dynamic ports 49152-65535
     ] = default_from_env("DESTINATION_PORT", None)
+    subnet_mask: Optional[str] = default_from_env("SUBNET_MASK", None)
 
+class CameraSettings(BaslerCameraAtom):
     convert_to_format: Optional[OutputImageFormat] = default_from_env("CONVERT_TO_FORMAT", "null")
-    pixel_format: Optional[PixelType] = default_from_env("PIXEL_TYPE", "Undefined")
+    pixel_format: Optional[PixelType] = default_from_env("PIXEL_TYPE", "Mono8")
 
     timeout_ms: Optional[
         Annotated[int, Field(strict=False, ge=200)]
-    ] = default_from_env("TIMEOUT_MS", None)  # milli seconds
+    ] = default_from_env("TIMEOUT_MS", 5000)  # milli seconds
+
+class CameraImageAcquisition(BaseModel):
+    exposure_time_microseconds: Optional[
+            Annotated[int, Field(strict=False, ge=500)]
+    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], 1000)  # micro seconds
+
+    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", "SingleFrame")
 
 
-class BaslerCameraParams(BaslerCameraSettings):
-    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", None)
+class BaslerCameraSettings(CameraCommunication, CameraSettings, CameraImageAcquisition):
+    pass
 
 
-class ImageParams(BaseModel):
+class BaslerCameraParams(CameraCommunication, CameraSettings, CameraImageAcquisition):
+    pass
+
+# --- Image parameter
+class ImageParamsFormat(BaseModel):
     # image format
     format: Optional[str] = default_from_env("IMAGE_FORMAT", "jpeg")
     quality: Optional[
         Annotated[int, Field(strict=False, le=100, ge=10)]
-    ] = default_from_env("IMAGE_QUALITY", None)
+    ] = default_from_env("IMAGE_QUALITY", 100)
+
+class ImageParamsProcessing(BaseModel):
     # image processing: rotation
-    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", None)  # degree
-    rotation_expand: Optional[bool] = None
+    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", 0)  # degree
+    rotation_expand: Optional[bool] = False
     # image processing: crop
     roi_left: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_LEFT", None)
+    ] = default_from_env("IMAGE_ROI_LEFT", 0)
     roi_top: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_TOP", None)
+    ] = default_from_env("IMAGE_ROI_TOP", 0)
     roi_right: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_RIGHT", None)
+    ] = default_from_env("IMAGE_ROI_RIGHT", 1)
     roi_bottom: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_BOTTOM", None)
+    ] = default_from_env("IMAGE_ROI_BOTTOM", 1)
+
+class ImageParams(ImageParamsFormat, ImageParamsProcessing):
+    pass
 
 
 class PhotoParams(ImageParams):
     exposure_time_microseconds: Optional[
             Annotated[int, Field(strict=False, ge=500)]
-    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], None)  # micro seconds
+    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], 1000)  # micro seconds
 
     emulate_camera: bool = default_from_env("EMULATE_CAMERA", False)

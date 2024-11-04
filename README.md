@@ -85,6 +85,13 @@ Now you have a virtual environment (i.e. all Python-packages are stored to the h
 
 Start the fastAPI-based servers just by executing the *main.py* files; for the streamlit-based Frontend call `streamlit run app.py` in [Frontend](Frontend).
 
+## Docker
+
+Find the corresponding released containers on dockerhub:
+
+- [backend](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-backend/)
+- [frontend](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-frontend/)
+- [inference engine](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-engine/)
 
 ## License
 
