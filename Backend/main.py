@@ -215,7 +215,7 @@ def backend(
     if pattern_key is None:
         pattern_key = DEFAULT_PATTERN_KEY
 
-    if pattern_key and bboxes:
+    if pattern_key and bboxes and PATTERNS:
         t8 = default_timer()
         decision, pattern_name, lg = _check_pattern(
             np.array(bboxes) / (img.size + img.size),
