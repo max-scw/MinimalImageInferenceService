@@ -79,12 +79,12 @@ services:
     ports:
       - 5000:5051  # external access port | only for debugging
 
-  inference-frontend:
+  frontend-service:
     container_name: frontend-streamlit
     build:
       context: ./
       dockerfile: Frontend.Dockerfile
-    image: schwmax/frontend
+#    image: schwmax/frontend
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin

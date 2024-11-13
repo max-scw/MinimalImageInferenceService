@@ -12,13 +12,13 @@ project_link=""
 [camera]
 exposure_time_microseconds=10000
 # camera address
-serial_number=""
-ip_address=""
-subnet_mask=""
-timeout=""  # seconds
-transmission_type=""
-destination_ip_address=""
-destination_port=""
+#serial_number=""
+#ip_address=""
+#subnet_mask=""
+#timeout=""  # seconds
+#transmission_type="Unicast"
+#destination_ip_address=""
+#destination_port=""
 image_extension=".jpg"
 # image
 pixel_type="BayerRG8"
