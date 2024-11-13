@@ -4,11 +4,11 @@ from timeit import default_timer
 
 from DataModels import CameraInfo, ResultInference
 from DataModels_BaslerCameraAdapter import (
-    PhotoParams,
     BaslerCameraSettings,
-    get_not_none_values
+    get_not_none_values,
+    ImageParams
 )
-from utils import setup_logging
+from utils import setup_logging, create_auth_headers
 
 from typing import Union, Dict, List
 
@@ -19,7 +19,7 @@ logger = setup_logging(__name__)
 
 def trigger_camera(
         camera_info: CameraInfo,
-        photo_params: PhotoParams,
+        image_params: ImageParams,
         timeout: int = 5  # seconds
 ) -> Union[bytes, None]:
     """
@@ -29,23 +29,23 @@ def trigger_camera(
     camera_info.timeout_ms = int(timeout * 1000)
 
     t0 = default_timer()
-    url = build_url(camera_info, photo_params)
+    url = build_url(camera_info, image_params)
     t1 = default_timer()
     logger.debug(f"trigger_camera(): url={url} (building url took {(t1 - t0) * 1000:.4g} ms)")
 
-    content = request_camera(url, timeout)
+    content = request_camera(url, timeout, token=camera_info.token)
     t2 = default_timer()
     logger.debug(f"trigger_camera(): request_camera(url, timeout={timeout}) (took {(t2 - t1) * 1000:.4g} ms)")
     return content
 
 
-def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
+def build_url(camera_info: CameraInfo, image_params: ImageParams) -> str:
     """
     Builds the url to call the BaslerCameraAdapter container
     github project: https://github.com/max-scw/BaslerCameraAdapter
     container: https://hub.docker.com/r/maxscw/baslercameraadapter
     :param camera_info:
-    :param photo_params:
+    :param image_params:
     :return: formatted url
     """
     params = {
@@ -53,7 +53,7 @@ def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
         if ky in BaslerCameraSettings.model_fields
     }
     # merge with photo parameter
-    params |= get_not_none_values(photo_params)
+    params |= get_not_none_values(image_params)
     # build url
     url = camera_info.url + f"?{urllib.parse.urlencode(params)}"
     return url
@@ -61,11 +61,12 @@ def build_url(camera_info: CameraInfo, photo_params: PhotoParams) -> str:
 
 def request_camera(
         address: str,
-        timeout: int = 5  # seconds
+        timeout: int = 5,  # seconds
+        token: str = None
 ) -> Union[bytes, None]:
 
     t0 = default_timer()
-    response = requests.get(url=address, timeout=timeout)
+    response = requests.get(url=address, timeout=timeout, headers=create_auth_headers(token))
     status_code = response.status_code
     t1 = default_timer()
     logger.info(
@@ -94,7 +95,8 @@ def request_model_inference(
         address: str,
         image_raw: bytes,
         extension: str,
-        timeout: int = 5  # seconds
+        timeout: int = 5,  # seconds,
+        token: str = None
 ) -> ResultInference:
 
     logger.debug(f"request_model_inference({address}, image={len(image_raw)}, extension={extension})")
@@ -104,7 +106,7 @@ def request_model_inference(
     content = {"image": (f"image.{ext}", image_raw, f"image/{ext}")}
 
     t0 = default_timer()
-    response = requests.post(address, files=content, timeout=timeout)
+    response = requests.post(address, files=content, headers=create_auth_headers(token), timeout=timeout)
     status_code = response.status_code
 
     logger.info(

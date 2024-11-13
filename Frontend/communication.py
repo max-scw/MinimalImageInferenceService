@@ -8,35 +8,26 @@ import logging
 
 
 from DataModels import ReturnValuesMain, SettingsMain
-from DataModels_BaslerCameraAdapter import BaslerCameraSettings, PhotoParams
+from DataModels_BaslerCameraAdapter import BaslerCameraSettings, ImageParams
+from utils import create_auth_headers
 
 
 def build_url(
         address: str,
         camera_params: BaslerCameraSettings,
-        photo_params: PhotoParams,
+        image_params: ImageParams,
         settings: SettingsMain,
 ):
+    logging.debug(f"build_url({address}, {camera_params}, {image_params}, {settings})")
     # address
     if not address.startswith(("http://", "https://")):
         address = "http://" + address
 
-    # return options
-    return_options = ReturnValuesMain(
-        decision=True,
-        pattern_name=True,
-        img=True,
-        img_drawn=True,
-        # details
-        bboxes=True,
-        class_ids=True,
-        scores=True,
-    )
     # join dictionaries
-    parameter = camera_params.dict() | photo_params.dict() | settings.dict() | return_options.dict()
+    parameter = camera_params.model_dump() | image_params.model_dump() | settings.model_dump()
 
     # parameter
-    params = {ky: vl for ky, vl in parameter.items() if (vl is not None) and (vl != "")}
+    params = {ky: vl for ky, vl in parameter.items() if (vl is not None) and (vl != "") and (ky != "token")}
 
     info = {ky: (vl, type(vl)) for ky, vl in params.items()}
     logging.debug(f"building URL for backend: {info}")
@@ -47,16 +38,18 @@ def build_url(
 def request_backend(
         address: str,
         camera_params: BaslerCameraSettings,
-        photo_params: PhotoParams,
+        image_params: ImageParams,
         settings: SettingsMain,
-        timeout: int = 1000
+        timeout: int = 1000,
+        token: str = None
 ) -> Union[Dict[str, Any], None]:
 
-    url = build_url(address, camera_params, photo_params, settings)  # TODO: can be cached
-    logging.debug(f"Request backend: {url}")
+    url = build_url(address, camera_params, image_params, settings)  # TODO: can be cached
+    headers = create_auth_headers(token)
+    logging.debug(f"Request backend: GET {url}, headers={headers} ")
 
     t0 = default_timer()
-    response = requests.get(url=url, timeout=timeout)
+    response = requests.get(url=url, timeout=timeout, headers=create_auth_headers(token))
     status_code = response.status_code
 
     logging.info(

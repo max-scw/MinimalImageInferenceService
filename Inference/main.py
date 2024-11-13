@@ -12,9 +12,16 @@ import onnxruntime as ort
 from timeit import default_timer
 
 # custom packages
-from utils import get_config, setup_logging, set_env_variable
-from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
-from utils_image_cv2 import scale_coordinates_to_image_size, prepare_image, bytes_to_image_array
+from utils import get_config, setup_logging, set_env_variable, default_from_env
+from utils_fastapi import (
+    default_fastapi_setup,
+    setup_prometheus_metrics,
+    AccessToken
+)
+from utils_image_cv2 import (
+    scale_coordinates_to_image_size,
+    prepare_image, bytes_to_image_array
+)
 # from utils_image import bytes_to_image_pil
 
 # Setup logging
@@ -63,7 +70,7 @@ EXECUTION_TIMING["onnx"] = Gauge(
 
 @app.post(ENTRYPOINT_INFERENCE)
 # Decorators do not work for async functions
-async def predict(image: UploadFile = File(...)):
+async def predict(image: UploadFile = File(...), token = AccessToken):
     t0 = default_timer()
     logger.debug(f"call {ENTRYPOINT_INFERENCE}")
     # increment counter for /metrics endpoint
@@ -143,6 +150,9 @@ if __name__ == "__main__":
     uvicorn.run(
         app=app,
         port=5052,
+        host="0.0.0.0",
         access_log=True,
-        log_config=None  # Uses the logging configuration in the application
+        log_config=None,  # Uses the logging configuration in the application
+        ssl_keyfile=default_from_env("SSL_KEYFILE", None),  # "server.key"
+        ssl_certfile=default_from_env("SSL_CERTIFICATE", None),  # "server.crt"
     )

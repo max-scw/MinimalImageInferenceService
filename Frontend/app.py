@@ -109,7 +109,7 @@ def main():
     set_css_config()
 
     # load configs
-    (camera_info, photo_params, settings_backend, app_settings), logger = get_frontend_config()
+    (camera_info, image_params, settings_backend, app_settings), logger = get_frontend_config()
 
     # initialize session state
     if "image" not in st.session_state:
@@ -182,9 +182,10 @@ def main():
                     content = request_backend(
                         address=app_settings.address_backend,
                         camera_params=camera_info,
-                        photo_params=photo_params,
+                        image_params=image_params,
                         settings=settings_backend,
-                        timeout=app_settings.timeout
+                        timeout=app_settings.timeout,
+                        token=settings_backend.token
                     )
                 except ConnectionError as ex:
                     logger.error(f"Failed to connect to backend: {ex}")
@@ -205,7 +206,7 @@ def main():
                 except Exception as ex:
                     with message_row:
                         st.error(f"An error occurred when requesting the backend.", icon="🚨")
-                    logger.error(f"An unexpected error occurred: {ex}")
+                    logger.error(f"An unexpected occurred when requesting the backend error: {ex}")
 
             # keep image in session state
             images = content["images"]

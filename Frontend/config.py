@@ -5,9 +5,9 @@ import logging
 from utils import get_config, get_env_variable
 from utils_streamlit import ImpressInfo
 
-from utils_config import get_photo_parameter_from_config, get_basler_camera_parameter_from_config
+from utils_config import get_image_parameter_from_config, get_basler_camera_parameter_from_config
 from DataModels import SettingsMain
-from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
+from DataModels_BaslerCameraAdapter import ImageParams, BaslerCameraSettings
 from DataModelsFrontend import AppSettings
 
 from typing import Union, List, Tuple
@@ -22,7 +22,7 @@ def look_for_file(filename: Union[str, Path], folders: List[Path]) -> Path:
     return path
 
 
-def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, PhotoParams, SettingsMain, AppSettings]:
+def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, ImageParams, SettingsMain, AppSettings]:
     config = get_config()
     logging.info(f"App configuration: {config}")
 
@@ -37,17 +37,19 @@ def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, Photo
     )
 
     camera_info = get_basler_camera_parameter_from_config(config)
-    photo_params = get_photo_parameter_from_config(config)
+    image_params = get_image_parameter_from_config(config)
 
     # general settings
     settings_backend = SettingsMain()
-    if "GENERAL_MIN_CONFIDENCE" in config:
-        settings_backend.min_score = config["GENERAL_MIN_CONFIDENCE"]
-    if "GENERAL_PATTERN_KEY" in config:
-        settings_backend.pattern_key = config["GENERAL_PATTERN_KEY"]
+    if "BACKEND_MIN_CONFIDENCE" in config:
+        settings_backend.min_score = config["BACKEND_MIN_CONFIDENCE"]
+    if "BACKEND_PATTERN_KEY" in config:
+        settings_backend.pattern_key = config["BACKEND_PATTERN_KEY"]
+    if "BACKEND_AUTH_TOKEN" in config:
+        settings_backend.token = config["BACKEND_AUTH_TOKEN"]
 
     app_settings = AppSettings(
-        address_backend=config["GENERAL_URL_BACKEND"],
+        address_backend=config["BACKEND_URL_BACKEND"],
         data_folder=config["GENERAL_DATA_FOLDER"],
         impress=impress,
         title=config["GENERAL_TITLE"] if "GENERAL_TITLE" in config else None,
@@ -57,7 +59,7 @@ def get_config_from_environment_variables() -> Tuple[BaslerCameraSettings, Photo
         image_size=config["GENERAL_IMAGE_SIZE"] if "GENERAL_IMAGE_SIZE" in config else None,
     )
 
-    return camera_info, photo_params, settings_backend, app_settings
+    return camera_info, image_params, settings_backend, app_settings
 
 
 def get_page_title(default_prefix: str = "") -> Union[str, None]:
@@ -66,4 +68,3 @@ def get_page_title(default_prefix: str = "") -> Union[str, None]:
     if prefix:
         key = f"{prefix}_{key}"
     return get_env_variable(key, None)
-

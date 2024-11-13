@@ -3,6 +3,9 @@ from enum import Flag, auto
 
 from pathlib import Path
 
+
+from DataModels_BaslerCameraAdapter import BaslerCameraSettings
+
 from typing_extensions import Annotated
 from typing import Optional, List, Dict, Tuple, Union, Literal
 
@@ -14,7 +17,8 @@ from DataModels_BaslerCameraAdapter import PhotoParams, BaslerCameraSettings
 class InferenceInfo(BaseModel):
     url: Union[str, Path]
     class_map: Optional[Dict[int, str]] = None
-    color_map: Optional[Dict[int, str]] = None
+    color_map: Optional[Dict[int, str]] = None,
+    token: Optional[str] = None
 
 
 class ResultInference(BaseModel):
@@ -33,6 +37,7 @@ class ResultInference(BaseModel):
 # ----- Camera
 class CameraInfo(BaslerCameraSettings):
     url: Union[str, Path]
+    token: Union[str, None]
 
 
 # ----- Main
@@ -47,12 +52,13 @@ class ReturnValuesMain(Flag):
     SCORES = auto()
     
     def __int__(self) -> int:
-        return self.value
+        return int(self.value)
 
 class SettingsMain(BaseModel):
     pattern_key: Optional[str] = None
     min_score: Optional[Annotated[float, Field(strict=False, le=1, ge=0)]] = 0.5
     return_options: Optional[Annotated[int, Field(strict=False, le=int(~ReturnValuesMain(0)), ge=0)]] = int(~ReturnValuesMain(0))
+    token: Optional[str] = None
 
 
 # ----- Pattern-Check

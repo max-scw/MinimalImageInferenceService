@@ -4,15 +4,17 @@ prefix="BE"
 #url="http://inference:5050/inference"
 #url="http://localhost:5052/inference"
 timeout=2  # seconds
+#auth_token="UTvK7oF9"
+
 
 
 [camera]
-url="http://camera-adapter:5050/basler/single-frame-acquisition/take-photo"
-#url="http://localhost:5051/basler/single-frame-acquisition/take-photo"
+url="http://camera-adapter:5050/basler/take-photo"
+#url="http://localhost:5051/basler/take-photo"
+#auth_token="4vrGhC7W"
 
 serial_number=""
 ip_address=""
-emulate_camera=true
 #transmission_type=
 #destination_ip_address=
 #destination_port=

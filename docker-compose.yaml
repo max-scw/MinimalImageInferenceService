@@ -1,7 +1,7 @@
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/basler-camera-adapter:v0.4.28
+    image: maxscw/basler-camera-adapter:v0.6.1
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -50,7 +50,7 @@ services:
       - ./models/yolov7-tiny.onnx:/home/app/data/model.onnx:ro
 #      - ./models/yolov7-tiny.onnx_fp16:/home/app/data/model.onnx
     ports:
-      - 5006:5050  # external access port | only for debugging
+      - 5006:5052  # external access port | only for debugging
 
   backend-service:
     container_name: backend
@@ -76,7 +76,7 @@ services:
     volumes:
       - ./data:/home/app/data/:rw
     ports:
-      - 5000:5050  # external access port | only for debugging
+      - 5000:5051  # external access port | only for debugging
 
   inference-frontend:
     container_name: frontend-streamlit

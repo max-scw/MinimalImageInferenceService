@@ -22,12 +22,15 @@ from plot_pil import plot_bboxs, plot_bounds
 from check_boxes import check_boxes, get_patterns_from_config
 from utils_image import image_to_base64, bytes_to_image_pil, save_image, image_pil_to_buffer
 
-from utils import get_config, read_mappings_from_csv, setup_logging
+from utils import get_config, read_mappings_from_csv, setup_logging, default_from_env
 
 from utils_communication import trigger_camera, request_model_inference
-from utils_fastapi import default_fastapi_setup, setup_prometheus_metrics
+from utils_fastapi import (
+    default_fastapi_setup,
+    setup_prometheus_metrics,
+    AccessToken
+)
 from utils_config import (
-    get_photo_parameter_from_config,
     get_basler_camera_parameter_from_config,
     get_image_parameter_from_config
 )
@@ -40,7 +43,6 @@ from DataModels import (
     ReturnValuesMain
 )
 from DataModels_BaslerCameraAdapter import (
-    PhotoParams,
     BaslerCameraSettings,
     get_not_none_values,
     ImageParams
@@ -70,12 +72,12 @@ save_every_x = int(m.group()) if m else None
 
 # entry points
 ENTRYPOINT = "/"
-ENTRYPOINT_MAIN = ENTRYPOINT + "backend"
+ENTRYPOINT_MAIN = ENTRYPOINT + "main"
 ENTRYPOINT_MAIN_WITH_CAMERA = ENTRYPOINT_MAIN + "/with-camera"
 ENTRYPOINT_CHECK_PATTERN = ENTRYPOINT + "check-pattern"
 ENTRYPOINT_IMAGE = ENTRYPOINT + "latest"
-ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "/image-raw"
-ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "/image-draw"
+ENTRYPOINT_IMAGE_RAW = ENTRYPOINT + "image-raw"
+ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "image-draw"
 
 # create fastAPI object
 title = "Backend"
@@ -115,6 +117,7 @@ async def main(
         image: UploadFile = File(...),
         image_params: ImageParams = Depends(),
         settings: SettingsMain = Depends(),
+        token = AccessToken
 ):
     # wait for file transmission
     image_bytes = await image.read()
@@ -124,6 +127,7 @@ async def main(
         image_params=image_params,
         settings=settings
     )
+
 
 def backend(
         img_bytes,
@@ -153,7 +157,8 @@ def backend(
                 address=address_inference,
                 image_raw=img_bytes,
                 extension=image_params.format,
-                timeout=CONFIG["INFERENCE_TIMEOUT"]
+                timeout=CONFIG["INFERENCE_TIMEOUT"],
+                token=CONFIG["INFERENCE_AUTH_TOKEN"] if "INFERENCE_AUTH_TOKEN" in CONFIG else None,
             )
             bboxes, class_ids, scores = result["bboxes"], result["class_ids"], result["scores"]
 
@@ -309,19 +314,21 @@ def backend(
 @EXCEPTION_COUNTER[ENTRYPOINT_MAIN_WITH_CAMERA].count_exceptions()
 def main_with_camera(
         camera_params: BaslerCameraSettings = Depends(),
-        photo_params: PhotoParams = Depends(),
-        settings: SettingsMain = Depends()
+        image_params: ImageParams = Depends(),
+        settings: SettingsMain = Depends(),
+        token = AccessToken
 ):
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_MAIN].inc()
 
     # join local parameter with config parameter
-    photo_params = PhotoParams(
+    image_params = ImageParams(
         **(
-                get_not_none_values(get_photo_parameter_from_config(CONFIG)) |
-                get_not_none_values(photo_params)
+                get_not_none_values(get_image_parameter_from_config(CONFIG)) |
+                get_not_none_values(image_params)
         )
     )
+    logger.debug(f"main_with_camera() image_params: {image_params}")
 
     address_camera = CONFIG["CAMERA_URL"] if "CAMERA_URL" in CONFIG else None
     if address_camera:
@@ -330,8 +337,13 @@ def main_with_camera(
                 get_not_none_values(get_basler_camera_parameter_from_config(CONFIG)) |
                 get_not_none_values(camera_params)
         )
+        logger.debug(f"main_with_camera() camera_params: {camera_params}")
         # create local CameraInfo instance
-        camera_ = CameraInfo(url=address_camera, **camera_params)
+        camera_ = CameraInfo(
+            url=address_camera,
+            **camera_params,
+            token=CONFIG["CAMERA_AUTH_TOKEN"] if "CAMERA_AUTH_TOKEN" in CONFIG else None
+        )
     else:
         msg = f"No address to a camera was provided. Please specify a URL by the environment variable 'CAMERA_URL'."
         logger.debug(msg)
@@ -341,7 +353,11 @@ def main_with_camera(
     try:
         # trigger camera
         t1 = default_timer()
-        img_bytes = trigger_camera(camera_, photo_params, timeout=CONFIG["CAMERA_TIMEOUT"])
+        img_bytes = trigger_camera(
+            camera_,
+            image_params,
+            timeout=CONFIG["CAMERA_TIMEOUT"]
+        )
 
         # log execution time
         t2 = default_timer()
@@ -357,7 +373,7 @@ def main_with_camera(
 
     return backend(
         img_bytes=img_bytes,
-        image_params=ImageParams.model_validate(photo_params.model_dump()),
+        image_params=ImageParams.model_validate(image_params.model_dump()),
         settings=settings
     )
 
@@ -365,7 +381,7 @@ def main_with_camera(
 @app.post(ENTRYPOINT_CHECK_PATTERN)
 @EXECUTION_TIMING[ENTRYPOINT_CHECK_PATTERN].time()
 @EXCEPTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].count_exceptions()
-async def check_pattern(request: PatternRequest):
+async def check_pattern(request: PatternRequest, token = AccessToken):
     t0 = default_timer()
     # increment counter for /metrics endpoint
     EXECUTION_COUNTER[ENTRYPOINT_CHECK_PATTERN].inc()
@@ -417,12 +433,12 @@ def _check_pattern(
 
 
 @app.get(ENTRYPOINT_IMAGE_RAW)
-def return_latest_image_raw():
+def return_latest_image_raw(token = AccessToken):
     global latest_image_raw
     return return_image(latest_image_raw)
 
 
-def return_image(image: Union[Image, None]):
+def return_image(image: Union[Image, None], token = AccessToken):
     # Return the latest image
     if image is not None:
         image_quality = CONFIG["CAMERA_IMAGE_QUALITY"] if "CAMERA_IMAGE_QUALITY" in CONFIG else CONFIG["GENERAL_IMAGE_QUALITY"]
@@ -432,7 +448,7 @@ def return_image(image: Union[Image, None]):
 
 
 @app.get(ENTRYPOINT_IMAGE_DRAW)
-def return_latest_image_draw():
+def return_latest_image_draw(token = AccessToken):
     global latest_image_draw
     return return_image(latest_image_draw)
 
@@ -440,7 +456,10 @@ def return_latest_image_draw():
 if __name__ == "__main__":
     uvicorn.run(
         app=app,
-        port=5050,
+        port=5051,
+        host="0.0.0.0",
         access_log=True,
-        log_config=None  # Uses the logging configuration in the application
+        log_config=None,  # Uses the logging configuration in the application
+        ssl_keyfile=default_from_env("SSL_KEYFILE", None),  # "server.key"
+        ssl_certfile=default_from_env("SSL_CERTIFICATE", None),  # "server.crt"
     )

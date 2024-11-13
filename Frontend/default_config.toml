@@ -15,22 +15,29 @@ exposure_time_microseconds=10000
 serial_number=""
 ip_address=""
 subnet_mask=""
-timeout=""
+timeout=""  # seconds
 transmission_type=""
 destination_ip_address=""
 destination_port=""
 image_extension=".jpg"
-# debugging
-emulate_camera=false
 # image
-image_format="jpeg"
-image_quality=85
+pixel_type="BayerRG8"
+convert_to_format="RGB"
+# image
+[camera.image]
+format="jpeg"
+quality=100
 
 
-[general]
-url_backend="http://backend:5050/main"
-#url_backend="http://localhost:5050/main"  # FIXME: for debugging
-file_type_save_image=".jpg"
-data_folder="./data"
+[backend]
+url_backend="http://backend:5051/main/with-camera"
+#url_backend="http://localhost:5051/main/with-camera"  # FIXME: for debugging
+auth_token="4vrGhC7W"
 timeout=10000
 
+[general]
+file_type_save_image=".jpg"
+data_folder="./data"
+#title=
+#description=
+#image_size
