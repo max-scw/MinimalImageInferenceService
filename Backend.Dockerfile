@@ -54,8 +54,9 @@ USER root
 RUN chown -R app:app /home/app
 USER app
 
-EXPOSE 5050
+EXPOSE 5051
 
-ENTRYPOINT ["uvicorn", "main:app", "--host=0.0.0.0", "--port=5050"]
+#ENTRYPOINT ["uvicorn", "main:app", "--host=0.0.0.0", "--port=5050"]
+ENTRYPOINT ["python", "main.py"]
 # FOR DEBUGGING
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
