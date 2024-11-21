@@ -175,11 +175,17 @@ def backend(
             t5 = default_timer()
             logger.debug(f"{sum(lg)}/{len(lg)} objects above minimum confidence score {settings.min_score} (took {(t5 - t4) * 1000:.4g} ms).")
     except (TimeoutError, ConnectionError):
-        raise HTTPException(status_code=408, detail="TimeoutError: Inference backend not responding.")
+        msg = "TimeoutError: Inference backend not responding."
+        logger.error(msg)
+        raise HTTPException(status_code=408, detail=msg)
     except ConnectionError as e:
-        raise HTTPException(status_code=408, detail=f"No connection to inference server: {e}")
+        msg = f"No connection to inference server: {e}"
+        logger.error(msg)
+        raise HTTPException(status_code=408, detail=msg)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Unknown fatal error at inference backend: {e}")
+        msg = f"Unknown fatal error at inference backend: {e}"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     # TODO: draw bounding-boxes on image? => Threading
     t6 = default_timer()
