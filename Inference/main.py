@@ -68,6 +68,33 @@ EXECUTION_TIMING["onnx"] = Gauge(
 )
 
 
+def postprocess(
+        results,
+        th_score
+):
+    # YOLOv7 results[0].shape = (1, 30, 7) ... [batch, # boxes, (nr batch, x, y, x, y, cls, score)]
+    # YOLOv10n results[0].shape = (1, 300, 6) ... [batch, # boxes, (x, y, x, y, score, cls)]
+    batch_i = results[0]
+    if batch_i.shape[1] > 6:
+        # YOLOv10
+        idx_xyxy = 0
+        idx_cls = 5
+        idx_score = 4
+        batch_i = batch_i[0]
+    else:
+        # YOLOv7
+        idx_xyxy = 1
+        idx_cls = 5
+        idx_score = 6
+
+    bboxes_xyxy = batch_i[:, idx_xyxy:(idx_xyxy + 4)]
+    class_ids = batch_i[:, idx_cls].astype(int)
+    scores = batch_i[:, idx_score]
+
+    lg = scores > th_score
+    return bboxes_xyxy[lg, :], class_ids[lg], scores[lg]
+
+
 @app.post(ENTRYPOINT_INFERENCE)
 # Decorators do not work for async functions
 async def predict(image: UploadFile = File(...), token = AccessToken):
@@ -101,9 +128,7 @@ async def predict(image: UploadFile = File(...), token = AccessToken):
 
         logger.debug(f"len(results)={len(results)}; results[0].shape={results[0].shape}")
 
-        bboxes = results[0][:, 1:5]
-        class_ids = results[0][:, 5].astype(int)
-        scores = results[0][:, 6]
+        bboxes, class_ids, scores = postprocess(results, CONFIG["MODEL_TH_SCORE"])
 
         # re-scale boxes
         logger.debug(f"Rescale boxes to original image size: img_mdl.shape={img_mdl.shape}, img.shape={img.shape}")
