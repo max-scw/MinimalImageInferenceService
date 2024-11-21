@@ -44,7 +44,7 @@ services:
       - LOGGING_LEVEL=DEBUG
 #      - PREFIX=IF  # default is IF
 #      - IF_MODEL_FILENAME=yolov7-tiny.onnx
-      - IF_MODEL_IMAGE_SIZE=(544, 640)
+      - IF_MODEL_IMAGE_SIZE=(640, 640)
       - IF_MODEL_PRECISION=fp32
 #      - IF_MODEL_PRECISION=fp16
     volumes:

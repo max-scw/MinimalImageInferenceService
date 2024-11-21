@@ -3,8 +3,9 @@ prefix="IF"
 [model]
 filename="model.onnx"
 folder_data="./data/"
-image_size=[544, 640]
+image_size=[640, 640]
 precision="fp32"
 #precision="fp16"
 onnx_providers=["CPUExecutionProvider"]
+th_score=0.5
 
