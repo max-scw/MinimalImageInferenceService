@@ -48,7 +48,6 @@ COPY Frontend/app.py \
      Frontend/config.py \
      Frontend/DataModelsFrontend.py \
      Frontend/default_config.toml \
-     Frontend/entrypoint.sh \
      ./
 
 
