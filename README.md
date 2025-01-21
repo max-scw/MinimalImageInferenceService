@@ -15,7 +15,9 @@ The app consists of 3-4 major building blocks, each wrapped in a Docker containe
 The *backend* and *frontend* services allow to specify details for the image acquistition. Note that this only works if a [BaslerCameraAdapter](https://github.com/max-scw/BaslerCameraAdapter)-container is used (or a similar REST interface).
 An exemplary configuration provides [docker-compose.yaml](docker-compose.yaml). The docker-compose file further adds a [prometheus](https://prometheus.io/) database and a [grafana](https://grafana.com/) dashboard to provide some monitoring on the app. (The fastAPI-based containers *Backend*, *Interface*, and *BaslerCameraAdapter* expose the standard `\metrics` endpoint for prometheus and specialized counters to monitor the system.)
 
+The frontend provides a minimalistic interface to interact with the backend. Note that it uses streamlits "wide" mode, i.e. landscape mode.
 
+![Example front-end](docs%2Ffrontend.gif)
 
 Note that a container engine facilitates starting all modules, but it is not mandatory. One can run the modules as fastAPI / streamlit server also from different consoles for development purposes.
 
@@ -76,14 +78,17 @@ Use a container engine such as Docker and the compose plugin to spin up the app 
 
 If you want to use bare Python (without a container engine), I recommend using Python 3.11 (or later).
 Set up a virtual environment installing all requirements: [Backend > requirements.txt](Backend%2Frequirements.txt), [Frontend > requirements.txt](Frontend%2Frequirements.txt), and [Inference > requirements.txt](Inference%2Frequirements.txt).
+
 ````shell
 python venv .venv  # create virtual environment
 source ./.venv/bin/activate  # activate virtual environment (linux)
 pip install -r Backend/requirements.txt -r Frontend/requirements.txt -r Inference/requirements.txt  # install requirements
 ````
+
 Now you have a virtual environment (i.e. all Python-packages are stored to the hidden folder .venv in this directory.)
 
-Start the fastAPI-based servers just by executing the *main.py* files; for the streamlit-based Frontend call `streamlit run app.py` in [Frontend](Frontend).
+Start the fastAPI-based servers just by executing the *main.py* files; for the streamlit-based Frontend call `streamlit run app.py` in [Frontend](Frontend) in separate consoles. Note that you will certainly have to copy some shared files an packages to the sub-folders in order to start all servers without a container engine.
+
 
 ## Docker
 
@@ -92,6 +97,10 @@ Find the corresponding released containers on dockerhub:
 - [backend](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-backend/)
 - [frontend](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-frontend/)
 - [inference engine](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-engine/)
+
+See the [docker-compose.yaml](docker-compose.yaml) file for an example how to start the app with all three major containers.
+Add [prometheus](https://prometheus.io/) and [grafana](https://grafana.com/) optionally to monitor the containers.
+
 
 ## License
 
