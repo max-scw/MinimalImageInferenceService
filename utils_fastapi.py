@@ -39,6 +39,7 @@ def default_fastapi_setup(
         license_info: Union[str, Dict[str, Any]] = None,
         contact: Union[str, Dict[str, Any]] = None,
         lifespan=None,
+        root_path=None
 ):
     if license_info is None:
         license_info = {
@@ -59,7 +60,8 @@ def default_fastapi_setup(
         contact=contact,
         license_info=license_info,
         lifespan=lifespan,
-        docs_url=None
+        docs_url=None,
+        root_path=root_path if root_path else None
     )
 
     # ----- home
