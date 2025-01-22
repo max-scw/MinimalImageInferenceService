@@ -113,7 +113,7 @@ class BaslerCameraAtom(BaseModel):
 
 
 class CameraCommunication(BaseModel):
-    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", "Unicast")
+    transmission_type: Optional[TransmissionType] = default_from_env("TRANSMISSION_TYPE", None)
     destination_ip_address: Optional[str] = default_from_env("DESTINATION_IP_ADDRESS", None)
     destination_port: Optional[
         Annotated[int, Field(strict=False, le=653535, ge=26)]  # dynamic ports 49152-65535
@@ -122,34 +122,34 @@ class CameraCommunication(BaseModel):
 
 
 class CameraSettings(BaslerCameraAtom):
-    convert_to_format: Optional[OutputImageFormat] = default_from_env("CONVERT_TO_FORMAT", "null")
-    pixel_format: Optional[PixelType] = default_from_env("PIXEL_TYPE", "Mono8")
+    convert_to_format: Optional[OutputImageFormat] = default_from_env("CONVERT_TO_FORMAT", None)
+    pixel_format: Optional[PixelType] = default_from_env("PIXEL_TYPE", None)
 
     timeout_ms: Optional[
         Annotated[int, Field(strict=False, ge=200)]
-    ] = default_from_env("TIMEOUT_MS", 5000)  # milli seconds
+    ] = default_from_env("TIMEOUT_MS", None)  # milli seconds
 
 
 class CameraImageAcquisition(BaseModel):
     exposure_time_microseconds: Optional[
             Annotated[int, Field(strict=False, ge=500)]
-    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], 1000)  # micro seconds
+    ] = default_from_env(["EXPOSURE_TIME", "EXPOSURE_TIME_MICROSECONDS"], None)  # micro seconds
 
-    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", "SingleFrame")
+    acquisition_mode: Optional[AcquisitionMode] = default_from_env("ACQUISITION_MODE", None)
 
 
 class BaslerCameraSettings(CameraCommunication, CameraSettings, CameraImageAcquisition):
     pass
 
 
-class BaslerCameraParams(BaslerCameraSettings):
+class BaslerCameraParams(CameraCommunication, CameraSettings, CameraImageAcquisition):
     pass
 # TODO: validator pixel format
 
 # --- Image parameter
 class ImageParamsFormat(BaseModel):
     # image format
-    format: Optional[str] = default_from_env("IMAGE_FORMAT", "jpeg")
+    format: Optional[str] = default_from_env("IMAGE_FORMAT", None)
     quality: Optional[
         Annotated[int, Field(strict=False, le=100, ge=10)]
     ] = default_from_env("IMAGE_QUALITY", 100)
@@ -157,21 +157,21 @@ class ImageParamsFormat(BaseModel):
 
 class ImageParamsProcessing(BaseModel):
     # image processing: rotation
-    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", 0)  # degree
-    rotation_expand: Optional[bool] = False
+    rotation_angle: Optional[float] = default_from_env("IMAGE_ROTATION_ANGLE", None)  # degree
+    rotation_expand: Optional[bool] = None
     # image processing: crop
     roi_left: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_LEFT", 0)
+    ] = default_from_env("IMAGE_ROI_LEFT", None)
     roi_top: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_TOP", 0)
+    ] = default_from_env("IMAGE_ROI_TOP", None)
     roi_right: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_RIGHT", 1)
+    ] = default_from_env("IMAGE_ROI_RIGHT", None)
     roi_bottom: Optional[
         Annotated[float, Field(strict=False, ge=0)]
-    ] = default_from_env("IMAGE_ROI_BOTTOM", 1)
+    ] = default_from_env("IMAGE_ROI_BOTTOM", None)
 
 
 class ImageParams(ImageParamsFormat, ImageParamsProcessing):
