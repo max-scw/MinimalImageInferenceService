@@ -1,18 +1,20 @@
+
 services:
   basler-camera-service:
     container_name: camera-adapter
-    image: maxscw/basler-camera-adapter:v0.6.1
+    image: maxscw/basler-camera-adapter:v0.6.6
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
 #      - PREFIX=  # default is no prefix
-      - FRAMES_PER_SECOND=10
       - ACQUISITION_MODE=SingleFrame
-      - ACCESS_TOKENS=7fwKBydr
+      - FASTAPI_ROOT_PATH="/camera"
 
-      - TRANSMISSION_TYPE=Multicast
-      - DESTINATION_PORT=46000
+#      - TRANSMISSION_TYPE=Multicast
+#      - DESTINATION_PORT=46000
+#      - IP_ADDRESS=1.1.1.5
+#      - DESTINATION_IP_ADDRESS=1.1.1.222
 
       - CONVERT_TO_FORMAT=RGB
       - PIXEL_TYPE=Mono8
@@ -21,57 +23,54 @@ services:
       - TIMEOUT_MS=5001
       - IMAGE_FORMAT=jpeg
       - IMAGE_QUALITY=100
-      - IMAGE_ROTATION_ANGLE=180
-      - IMAGE_ROI_LEFT=0.14
-      - IMAGE_ROI_RIGHT=0.885
-#      - EMULATE_CAMERA=true
-#      - TEST_IMAGE=./test
-#    volumes:
-#      - ./testimages:/home/app/test
+
+      - TEST_IMAGE=./test
+    volumes:
+      - ./test/test_images:/home/app/test
     ports:
       - 3956:3956
       - 46000:46000/udp  # set Streaming Port to fixed value with pylonViewer
       - 5005:5050  # external access port | for debugging
 
+
   inference-service:
-    container_name: inference
-    build:
-      context: ./
-      dockerfile: Inference.Dockerfile
+    container_name: inference-engine
+    image: maxscw/minimal-image-inference-engine:v0.3.2
+#    build:
+#      context: ./
+#      dockerfile: Inference.Dockerfile
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
-#      - PREFIX=IF  # default is IF
-#      - IF_MODEL_FILENAME=yolov7-tiny.onnx
       - IF_MODEL_IMAGE_SIZE=(640, 640)
       - IF_MODEL_PRECISION=fp32
-#      - IF_MODEL_PRECISION=fp16
+#      - ACCESS_TOKENS=fj48SL835sU#rdf
     volumes:
-      - ./Inference/data/yolov7-tiny.onnx:/home/app/data/model.onnx:ro
-#      - ./models/yolov7-tiny.onnx_fp16:/home/app/data/model.onnx
+      - ./test/yolov7-tiny.onnx:/home/app/data/model.onnx:ro
     ports:
       - 5006:5052  # external access port | only for debugging
 
+
   backend-service:
     container_name: backend
-    build:
-      context: ./
-      dockerfile: Backend.Dockerfile
+    image: maxscw/minimal-image-inference-backend:v0.3.0
+#    build:
+#      context: ./
+#      dockerfile: Backend.Dockerfile
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       - LOGGING_LEVEL=DEBUG
-#      - PREFIX=BE  # default is BE
-#      - BE_INFERENCE_URL=http://inference:5052/inference
       - BE_CAMERA_URL=http://camera-adapter:5050/basler/take-photo
-#      - BE_CAMERA_*
       - BE_CAMERA_TIMEOUT=5.1
+
+      - BE_INFERENCE_URL=http://inference-engine:5052/inference
       - BE_INFERENCE_TIMEOUT=2
-      - BE_CAMERA_AUTH_TOKEN=7fwKBydr
+#      - BE_INFERENCE_AUTH_TOKEN=fj48SL835sU#rdf
       # model
-      - BE_MODEL_MAPPING=./settings/class_map_CRU.csv
-      - BE_PATTERN_FILE=./settings/desired_coordinates.yml
+#      - BE_MODEL_MAPPING=./settings/class_map_CRU.csv
+#      - BE_PATTERN_FILE=./desired_coordinates.yml
       # general
       - BE_GENERAL_SAVE_IMAGES=all
     volumes:
@@ -79,46 +78,59 @@ services:
     ports:
       - 5000:5051  # external access port | only for debugging
 
+
   frontend-service:
-    container_name: frontend-streamlit
-    build:
-      context: ./
-      dockerfile: Frontend.Dockerfile
-#    image: schwmax/frontend
+    container_name: frontend
+    image: maxscw/minimal-image-inference-frontend:v0.3.1
+#    build:
+#      context: ./
+#      dockerfile: Frontend.Dockerfile
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
       # variables to customize container
-#      - PREFIX=FE  # default is FE
       # general configs
-      - FE_GENERAL_URL_BACKEND="http://backend:5050/main"
-#      - FE_GENERAL_TITLE="MVE for object recognition"
-#      - FE_GENERAL_DESCRIPTION="loreipsum ..."
+      - FE_GENERAL_URL_BACKEND="http://backend:5051/main/with-camera"
       # camera
-#      - FE_CAMERA_SERIAL_NUMBER=0
 #      - FE_CAMERA_IP_ADDRESS=192.168.10.5
 #      - FE_CAMERA_SUBNET_MASK=255.255.255.0
 #      - FE_CAMERA_TRANSMISSION_TYPE=Multicast
-#      - FE_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.223
+#      - FE_CAMERA_DESTINATION_IP_ADDRESS=192.168.10.222
 #      - FE_CAMERA_DESTINATION_PORT=46000
-      - FE_CAMERA_IMAGE_FORMAT=jpeg
-      - FE_CAMERA_IMAGE_QUALITY=100
+#      - FE_CAMERA_IMAGE_FORMAT=jpeg
+#      - FE_CAMERA_IMAGE_QUALITY=100
 #      - FE_CAMERA_PIXEL_TYPE=BayerRG8
 #      - FE_CAMERA_CONVERT_TO_FORMAT=RGB
       # impress
       - FE_IMPRESS_PROJECT_NAME="Minimal Inference"
-      - FE_IMPRESS_AUTHOR=SCHWMAX
-#      - FE_IMPRESS_STATUS
+      - FE_IMPRESS_AUTHOR=max-scw
+      - FE_IMPRESS_STATUS=Test
 #      - FE_IMPRESS_ADDITIONAL_INFO
       - FE_IMPRESS_PROJECT_LINK=https://github.com/max-scw/MinimalImageInferenceService.git
 
       # streamlit
       - STREAMLIT_THEME_PRIMARY_COLOR=#2D4275
+      - STREAMLIT_SERVER_HEADLESS=True
+      - STREAMLIT_SERVER_ENABLE_CORS=False  # enableCORS
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=False  #enableXsrfProtection
     volumes:
       # mount folder to save images to
       - ./data/:/home/app/data/:rw
     ports:
       - 5001:8501  # external access port
+
+  nginx-service:
+    container_name: nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 5100:80
+    depends_on:
+      - backend-service
+      - basler-camera-service
+      - frontend-service
+
 
 #  # ----- MONITORING -----
 #  prometheus-db-service:
