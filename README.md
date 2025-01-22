@@ -52,6 +52,9 @@ MinimalImageInferenceService
     |-- dashboard.json  # default dashboard
     |-- datasource.yml  # configures prometheus as datas ource so that the dashboard works from start-up
   |-- prometheus.yml  # configuration for promtheus: where and how often to scrape
++-- test  # only for demonstration purposes
+  +-- test_images  # folder with images from the COCO dataset
+  |-- yolov7-tiny.onnx  # pretrained tiny YOLOv7 on the COCO dataset
 +-- tools
   |-- determine_desired_coordinates.py  # calculates a bounding-box pattern from labels and predictions
   |-- export_model_predictions.py  # exports the predictions of a given model to a folder (txt + image files with bounding boxes)
@@ -76,6 +79,9 @@ MinimalImageInferenceService
 
 Use a container engine such as Docker and the compose plugin to spin up the app automatically with `docker-compose up -d`
 
+
+**Note**: Use a container engine, seriously. It is so much easier.
+
 If you want to use bare Python (without a container engine), I recommend using Python 3.11 (or later).
 Set up a virtual environment installing all requirements: [Backend > requirements.txt](Backend%2Frequirements.txt), [Frontend > requirements.txt](Frontend%2Frequirements.txt), and [Inference > requirements.txt](Inference%2Frequirements.txt).
 
@@ -99,7 +105,7 @@ Find the corresponding released containers on dockerhub:
 - [inference engine](https://hub.docker.com/repository/docker/maxscw/minimal-image-inference-engine/)
 
 See the [docker-compose.yaml](docker-compose.yaml) file for an example how to start the app with all three major containers.
-Add [prometheus](https://prometheus.io/) and [grafana](https://grafana.com/) optionally to monitor the containers.
+Add [prometheus](https://prometheus.io/) and [grafana](https://grafana.com/) optionally to monitor the containers and an [nginx](https://nginx.org/) router to provide a single entry point for your app.
 
 
 ## License
