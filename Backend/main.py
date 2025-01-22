@@ -82,7 +82,7 @@ ENTRYPOINT_IMAGE_DRAW = ENTRYPOINT + "image-draw"
 # create fastAPI object
 title = "Backend"
 summary = "Minimalistic server providing a REST api to orchestrate a containerized computer vision application."
-app = default_fastapi_setup(title, summary)
+app = default_fastapi_setup(title, summary, root_path=CONFIG["GENERAL_ROOT_PATH"])
 
 
 # set up /metrics endpoint for prometheus
@@ -253,8 +253,10 @@ def backend(
 
         t9 = default_timer()
         logger.debug(f"Pattern check took {(t9 - t8) * 1000:.4g} ms")
-    else:
+    elif not pattern_key:
         logger.info("No pattern provided to check bounding-boxes.")
+    elif not bboxes:
+        logger.info("No bounding-boxes found.")
 
     # save image
     global counter
