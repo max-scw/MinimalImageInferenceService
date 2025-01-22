@@ -20,7 +20,9 @@ from utils_fastapi import (
 )
 from utils_image_cv2 import (
     scale_coordinates_to_image_size,
-    prepare_image, bytes_to_image_array
+    prepare_image,
+    bytes_to_image_array,
+    postprocess
 )
 # from utils_image import bytes_to_image_pil
 
@@ -66,34 +68,6 @@ EXECUTION_TIMING["onnx"] = Gauge(
     name="ONNX_session_execution_time",
     documentation=f"How long did the actual ONNX session call took?"
 )
-
-
-def postprocess(
-        results,
-        th_score
-):
-    # YOLOv7 results[0].shape = (1, 30, 7) ... [batch, # boxes, (nr batch, x, y, x, y, cls, score)]
-    # YOLOv10n results[0].shape = (1, 300, 6) ... [batch, # boxes, (x, y, x, y, score, cls)]
-    batch_i = results[0]
-    if batch_i.shape[1] > 6:
-        # YOLOv10
-        idx_xyxy = 0
-        idx_cls = 5
-        idx_score = 4
-        batch_i = batch_i[0]
-    else:
-        # YOLOv7
-        idx_xyxy = 1
-        idx_cls = 5
-        idx_score = 6
-
-    bboxes_xyxy = batch_i[:, idx_xyxy:(idx_xyxy + 4)]
-    class_ids = batch_i[:, idx_cls].astype(int)
-    scores = batch_i[:, idx_score]
-
-    lg = scores > th_score
-    return bboxes_xyxy[lg, :], class_ids[lg], scores[lg]
-
 
 @app.post(ENTRYPOINT_INFERENCE)
 # Decorators do not work for async functions

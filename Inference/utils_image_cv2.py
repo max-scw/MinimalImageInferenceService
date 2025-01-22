@@ -174,6 +174,32 @@ def scale_coordinates_to_image_size(
     return scaled_bboxs
 
 
+def postprocess(
+        results,
+        th_score
+):
+    # YOLOv7 results[0].shape = (1, 30, 7) ... [batch, # boxes, (nr batch, x, y, x, y, cls, score)]
+    # YOLOv10n results[0].shape = (1, 300, 6) ... [batch, # boxes, (x, y, x, y, score, cls)]
+    batch_i = results[0]
+    if batch_i.shape[1] > 6:
+        # YOLOv7
+        idx_xyxy = 1
+        idx_cls = 5
+        idx_score = 6
+    else:
+        # YOLOv10
+        idx_xyxy = 0
+        idx_cls = 5
+        idx_score = 4
+        batch_i = batch_i[0]
+
+    bboxes_xyxy = batch_i[:, idx_xyxy:(idx_xyxy + 4)]
+    class_ids = batch_i[:, idx_cls].astype(int)
+    scores = batch_i[:, idx_score]
+
+    lg = scores > th_score
+    return bboxes_xyxy[lg, :], class_ids[lg], scores[lg]
+
 if __name__ == "__main__":
     img = cv2.imread("../../BaslerCameraAdapter/test_images/20240813_120110.jpg")
 
