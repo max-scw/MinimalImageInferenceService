@@ -1,7 +1,7 @@
 prefix="BE"
 
 [inference]
-#url="http://inference:5050/inference"
+#url="http://inference:5052/inference"
 #url="http://localhost:5052/inference"
 timeout=2  # seconds
 #auth_token="UTvK7oF9"
@@ -10,7 +10,7 @@ timeout=2  # seconds
 
 [camera]
 url="http://camera-adapter:5050/basler/take-photo"
-#url="http://localhost:5051/basler/take-photo"
+#url="http://localhost:5050/basler/take-photo"
 #auth_token="4vrGhC7W"
 
 serial_number=""
@@ -37,6 +37,7 @@ save_images="all"  # literal: "all", "every x", "no"
 save_images_with_failed_pattern_check=true
 folder_saved_images="data"
 image_quality=100
+root_path=""
 
 [pattern]
 file="./data/"
